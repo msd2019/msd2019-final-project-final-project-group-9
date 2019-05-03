@@ -9,7 +9,123 @@ output:
     toc_depth: 3
 ---
 
+```{r}
+library(tidyverse)
+library(modelr)
+library(ggplot2)
+library(igraph)
 
+```
+
+
+
+```{r}
+hist_edgelist = read.table( "History_edgelist.txt", header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
+hist_vertex = read.table(file  = 'History_vertexlist.txt', sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'Institution'))
+
+
+head(hist_edgelist)
+head(hist_vertex)
+```
+
+
+
+```{r}
+employee_counts = hist_edgelist %>%
+  group_by( u ) %>%
+  summarize( count = n()) %>%
+  ungroup() %>%
+  left_join( hist_vertex, by = "u") %>%
+  select(u, count, institution)
+
+grad_counts = hist_edgelist %>%
+  group_by( v ) %>%
+  summarize( count = n() ) %>%
+  ungroup()
+
+
+head(  employee_counts )
+head(  grad_counts )
+
+```
+
+```{r}
+employee_counts %>%
+  ggplot(aes(x = u, y = count)) +
+  geom_point()
+
+
+```
+
+```{r}
+tail( employee_counts )
+
+#getting rid of row 145, "All Others" Doesn't provide much info
+employee_counts = employee_counts %>% 
+  filter(u != 145)
+
+
+```
+
+Making a network of weighted edges
+
+```{r}
+hist_weighted_edgelist = hist_edgelist %>% 
+  group_by(v, u) %>%
+  summarize( count = n()) %>%
+  ungroup() %>%
+  left_join( hist_vertex, by = c('v'= 'u')) %>%
+  select(v, u, count, institution)
+  
+
+tail( hist_weighted_edgelist )
+```
+
+
+
+Filtering to just the schools with a count $> 100$ so I can make a graph to just look at the network
+```{r}
+ids = employee_counts %>%
+  filter(count > 100) %>%
+  select(u) 
+
+
+
+
+smaller = hist_weighted_edgelist %>%
+  filter( u %in% ids$u , v %in% ids$u)
+
+
+nrow( smaller )
+nrow(hist_edgelist)
+ids
+
+```
+
+
+```{r}
+
+
+
+
+graph = hist_weighted_edgelist %>%
+  graph_from_data_frame(directed = TRUE)
+
+smaller_graph = smaller %>%
+   graph_from_data_frame(directed = TRUE)
+
+plot(
+  graph, vertex_size = 1, edge.width=E(graph)$count/5, layout =  layout_in_circle(graph, order = V(graph)
+    )
+  )
+
+plot(smaller_graph, vertex_size = 2 ,edge.width=E(smaller_graph)$count/2, 
+     layout = layout_in_circle(smaller_graph, order = V(smaller_graph)), 
+     vertex.label = unique( E(smaller_graph)$institution )
+     )
+
+
+```
 
 
 
