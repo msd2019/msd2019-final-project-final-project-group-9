@@ -27,38 +27,72 @@ rest = data.frame()
 
 for( dep in c('ComputerScience','Business', 'History' ) ){
 
+#Reading the tables
+  
 edgelist = read.table( paste(dep, '_edgelist.txt', sep = ""), header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
 
 vertex = read.table(file  = paste(dep, '_vertexlist.txt', sep = ""), sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'institution'))
 
 
+
+#making a table that includes the weight of each edge
 weighted_edgelist = edgelist %>% 
   group_by(v, u) %>%
   summarize( count = n()) %>%
   ungroup() %>%
-  left_join( bus_vertex, by = c('v'= 'u')) %>%
+  left_join( vertex, by = c('v'= 'u')) %>%
   select(v, u, count, institution)
 
 
+#fitlering the weighted edgelist to make an easier to look at plot (like in Fig. 1)
 smaller = weighted_edgelist %>%
   filter( u <= 10 , v <= 10 )
 
-graph = weighted_edgelist %>%
-  graph_from_data_frame(directed = TRUE)
-
-
+#Then plotting this network of the top schools
 smaller_graph = smaller %>%
    graph_from_data_frame(directed = TRUE)
 
 
 plot(smaller_graph, vertex_size = 2 ,edge.width=E(smaller_graph)$count/2,
      layout = layout_in_circle(smaller_graph, order = V(smaller_graph)), 
-     vertex.label = unique( E(smaller_graph)$institution )
+     vertex.label = unique( E(smaller_graph)$institution ), 
+     main = paste(dep, 'Department', sep = " ")
      )
 
-edgelist$dep = dep
+
 
 num_schools = max(edgelist$u)
+
+#making another set of the full network to make a network plot like in Fig. 3)
+
+power_list = weighted_edgelist %>%
+  filter(v != num_schools, u != num_schools) %>%
+  group_by(v) %>%
+  summarize( top_school =  as.double( v <= 0.15*num_schools)[1], 
+  power = num_schools - v[1] ) %>%
+  ungroup()
+
+
+#Setting up the network to plot Fig. 3
+graph = weighted_edgelist %>%
+  filter( u != v, u %in%power_list$v, v %in% power_list$v  ) %>%
+  graph_from_data_frame(directed = FALSE, vertices = power_list    )
+
+
+plot( graph, vertex.size = 2 + 3*V(graph)$top_school + V(graph)$power/15,
+      vertex.color = 3 + V(graph)$top_school,
+      vertex.label = NA, 
+      main = paste(dep, 'Department', sep = " ")
+      )
+
+
+
+
+#making dataframes of the top 15 of institutions with the differences in prestige from phd to faculty shools
+#This is to make the density plots in Fig. 3
+#Am doing rbing to keep data from all the departments, but addign the label of department first
+
+edgelist$dep = dep
 
 
 top15 = rbind(top15,  edgelist %>%
@@ -67,7 +101,7 @@ top15 = rbind(top15,  edgelist %>%
   select(diff, dep)
   )
 
-
+#doing the same thing for the rest of the institutions
 rest = rbind(rest,  edgelist %>%
   filter(u > .15*num_schools) %>%
   filter( u < num_schools ) %>%
@@ -80,18 +114,34 @@ rest = rbind(rest,  edgelist %>%
 ```
 
 ```{r}
+
+#Making the density plots here
+
 top15 %>%
-  ggplot(aes(x = diff, color = dep)) +
-  geom_density()
+  ggplot(aes(x = diff, color = dep) ) +
+  geom_density() +
+  geom_vline(xintercept = 0, linetype = 'dashed' ) +
+  ylim(0, 2.8) + 
+  xlim(-.5, 1) +
+  ggtitle("Top 15% of Institutions") + 
+  ylab('Density') +
+  xlab('Relative change in rank from Ph.D Institution') +
+  labs(color = 'Department')
 
 
 rest %>%
-  ggplot(aes(x = diff, color = dep)) +
-  geom_density()
+  ggplot(aes(x = diff, color = dep), ylim = c(0, 2.8)) +
+  geom_density() +
+  geom_vline(xintercept = 0, linetype = 'dashed' ) +
+  ylim(0, 2.8) + 
+  xlim(-.5, 1) +
+  ggtitle("All other Institutions") + 
+  ylab('Density') +
+  xlab('Relative change in rank from Ph.D Institution') +
+  labs(color = 'Department')
 
 
 ```
-
 
 
 
