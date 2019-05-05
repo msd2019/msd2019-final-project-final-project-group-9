@@ -19,109 +19,20 @@ library(igraph)
 
 
 
-
-
+Make a loop that uses the same code for the three departments
 ```{r}
-hist_edgelist = read.table( "History_edgelist.txt", header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
-hist_vertex = read.table(file  = 'History_vertexlist.txt', sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'institution'))
-
-coms_edgelist = read.table( "ComputerScience_edgelist.txt", header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
-coms_vertex = read.table(file  = 'ComputerScience_vertexlist.txt', sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'institution'))
+top15 = data.frame()
+rest = data.frame()
 
 
-bus_edgelist = read.table( "Business_edgelist.txt", header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
-bus_vertex = read.table(file  = 'Business_vertexlist.txt', sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'institution'))
+for( dep in c('ComputerScience','Business', 'History' ) ){
+
+edgelist = read.table( paste(dep, '_edgelist.txt', sep = ""), header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
+
+vertex = read.table(file  = paste(dep, '_vertexlist.txt', sep = ""), sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'institution'))
 
 
-
-head(hist_edgelist)
-head(hist_vertex)
-```
-
-
-
-```{r}
-hist_employee_counts_all = hist_edgelist %>%
-  group_by( u ) %>%
-  summarize( count = n()) %>%
-  ungroup() %>%
-  left_join( hist_vertex, by = "u") %>%
-  select(u, count, institution)
-
-
-coms_employee_counts_all = coms_edgelist %>%
-  group_by( u ) %>%
-  summarize( count = n()) %>%
-  ungroup() %>%
-  left_join( coms_vertex, by = "u") %>%
-  select(u, count, institution)
-
-bus_employee_counts_all = bus_edgelist %>%
-  group_by( u ) %>%
-  summarize( count = n()) %>%
-  ungroup() %>%
-  left_join( bus_vertex, by = "u") %>%
-  select(u, count, institution)
-
-
-hist_grad_counts = hist_edgelist %>%
-  group_by( v ) %>%
-  summarize( count = n() ) %>%
-  ungroup()
-
-coms_grad_counts = coms_edgelist %>%
-  group_by( v ) %>%
-  summarize( count = n() ) %>%
-  ungroup()
-
-bus_grad_counts = bus_edgelist %>%
-  group_by( v ) %>%
-  summarize( count = n() ) %>%
-  ungroup()
-
-
-head(  employee_counts_all )
-head(  grad_counts )
-
-```
-
-```{r}
-hist_employee_counts_all %>%
-  ggplot(aes(x = u, y = count)) +
-  geom_point()
-
-
-```
-
-```{r}
-tail( hist_employee_counts_all )
-
-#getting rid of row 145, "All Others" Doesn't provide much info
-hist_employee_counts = hist_employee_counts_all %>% 
-  filter(u != 145)
-
-
-```
-
-Making a network of weighted edges
-
-```{r}
-hist_weighted_edgelist = hist_edgelist %>% 
-  group_by(v, u) %>%
-  summarize( count = n()) %>%
-  ungroup() %>%
-  left_join( hist_vertex, by = c('v'= 'u')) %>%
-  select(v, u, count, institution)
-  
-
-coms_weighted_edgelist = coms_edgelist %>% 
-  group_by(v, u) %>%
-  summarize( count = n()) %>%
-  ungroup() %>%
-  left_join( coms_vertex, by = c('v'= 'u')) %>%
-  select(v, u, count, institution)
-
-bus_weighted_edgelist = bus_edgelist %>% 
+weighted_edgelist = edgelist %>% 
   group_by(v, u) %>%
   summarize( count = n()) %>%
   ungroup() %>%
@@ -129,181 +40,60 @@ bus_weighted_edgelist = bus_edgelist %>%
   select(v, u, count, institution)
 
 
-tail( hist_weighted_edgelist )
-```
+smaller = weighted_edgelist %>%
+  filter( u <= 10 , v <= 10 )
 
-
-
-Filtering to just the schools with a count $> 100$ so I can make a graph to just look at the network
-```{r}
-hist_ids = hist_employee_counts_all %>%
-  filter(count > 100) %>%
-  select(u) 
-
-coms_ids = coms_employee_counts_all %>%
-  filter(count > 100) %>%
-  select(u) 
-
-bus_ids = bus_employee_counts_all %>%
-  filter(count > 100) %>%
-  select(u) 
-
-hist_smaller = hist_weighted_edgelist %>%
-  filter( u %in% ids$u , v %in% ids$u)
-
-coms_smaller = coms_weighted_edgelist %>%
-  filter( u %in% ids$u , v %in% ids$u)
-
-bus_smaller = bus_weighted_edgelist %>%
-  filter( u %in% ids$u , v %in% ids$u)
-
-
-nrow( hist_smaller )
-nrow(hist_edgelist)
-#hist_ids
-
-
-```
-
-
-```{r}
-
-
-
-
-hist_graph = hist_weighted_edgelist %>%
-  graph_from_data_frame(directed = TRUE)
-
-coms_graph = coms_weighted_edgelist %>%
-  graph_from_data_frame(directed = TRUE)
-
-bus_graph = bus_weighted_edgelist %>%
+graph = weighted_edgelist %>%
   graph_from_data_frame(directed = TRUE)
 
 
-
-
-hist_smaller_graph = hist_smaller %>%
-   graph_from_data_frame(directed = TRUE)
- 
-coms_smaller_graph = coms_smaller %>%
-   graph_from_data_frame(directed = TRUE)
-
-bus_smaller_graph = bus_smaller %>%
+smaller_graph = smaller %>%
    graph_from_data_frame(directed = TRUE)
 
 
-
-
- 
-plot(hist_smaller_graph, vertex_size = 2 ,edge.width=E(hist_smaller_graph)$count/2, 
-     layout = layout_in_circle(hist_smaller_graph, order = V(hist_smaller_graph)), 
-     vertex.label = unique( E(hist_smaller_graph)$institution )
+plot(smaller_graph, vertex_size = 2 ,edge.width=E(smaller_graph)$count/2,
+     layout = layout_in_circle(smaller_graph, order = V(smaller_graph)), 
+     vertex.label = unique( E(smaller_graph)$institution )
      )
 
-plot(coms_smaller_graph, vertex_size = 2 ,edge.width=E(coms_smaller_graph)$count/2, 
-     layout = layout_in_circle(coms_smaller_graph, order = V(coms_smaller_graph)), 
-     vertex.label = unique( E(coms_smaller_graph)$institution )
-     )
+edgelist$dep = dep
 
-plot(bus_smaller_graph, vertex_size = 2 ,edge.width=E(bus_smaller_graph)$count/2, 
-     layout = layout_in_circle(bus_smaller_graph, order = V(bus_smaller_graph)), 
-     vertex.label = unique( E(bus_smaller_graph)$institution )
-     )
+num_schools = max(edgelist$u)
 
 
+top15 = rbind(top15,  edgelist %>%
+  filter(u <= .15*num_schools) %>%
+  mutate(diff = (v - u)/num_schools) %>%
+  select(diff, dep)
+  )
+
+
+rest = rbind(rest,  edgelist %>%
+  filter(u > .15*num_schools) %>%
+  filter( u < num_schools ) %>%
+  mutate(diff = (v - u)/num_schools) %>%
+  select(diff, dep)
+  )
+
+
+}
 ```
-
-
 
 ```{r}
-#For ideas of looking into how the networks change when filtering for these values
-
-hist_edgelist %>%
-  group_by(rank) %>%
-  summarize( count = n() )
-
-```
+top15 %>%
+  ggplot(aes(x = diff, color = dep)) +
+  geom_density()
 
 
-In the cells below is the replication of figure 3. U is already denoted as the rank of the school, based on the authors' random sampling method.
-```{r}
-
-#employee_counts[order(employee_counts$count, decreasing = TRUE), ]
-
-
-n = nrow(employee_counts)
-
-
-rank = employee_counts[order(employee_counts$count, decreasing = TRUE), ]
-
-top15  = employee_counts_all %>%
-  filter(u <= 0.15*n )
-
-
-rest  = employee_counts_all %>%
-  filter(u > 0.15 * n )
-
-
-top15tot= sum( top15$count )
-resttot = sum( rest$count )
-
-```
-```{r}
-
-
-
-hist_top15plot =  hist_edgelist %>%
-  filter( u <= 0.15*n ) %>%
-  mutate( diff = (v - u)/n() ) %>%
-  group_by(diff) %>%
-  summarize(count = n()) %>%
-  ungroup
-
-
-coms_top15plot =  coms_edgelist %>%
-  filter( u <= 0.15*n ) %>%
-  mutate( diff = (v - u)/n() ) %>%
-  group_by(diff) %>%
-  summarize(count = n()) %>%
-  ungroup
-
-bus_top15plot =  bus_edgelist %>%
-  filter( u <= 0.15*n ) %>%
-  mutate( diff = (v - u)/n() ) %>%
-  group_by(diff) %>%
-  summarize(count = n()) %>%
-  ungroup
-
-
-
-#rbind(hist_top15plot, coms_top15plot) %>%
-##  ggplot(aes(x = diff, y = count)) +
-#  geom_line(aes(), colour = 'green', stat = "summary_bin", binwidth = 10) + 
-  #geom_line(aes(x = coms_top15plot$diff, y = coms_top15plot$count), color = 'red', stat = "summary_bin", binwidth = 10)
-
-ggplot() + 
-  geom_smooth( data = hist_top15plot, aes(x = diff, y = count, colour = 'History'), method = lm, se = FALSE,
-             colour = 'green', stat = "summary_bin", binwidth = .003 ) +
-  geom_smooth( data = coms_top15plot, aes(x = diff, y = count, colour = 'Computer Science'), colour = 'blue', stat = "summary_bin", binwidth = .003 ) +
-  geom_smooth( data = bus_top15plot, aes(x = diff, y = count, colour = 'Business'), colour = 'red', stat = "summary_bin", binwidth = .003 ) +
-  labs( colour = 'Department')
-
-
-
-
-hist_restplot =  hist_edgelist %>%
-  filter( u != 145) %>%
-  filter( u > 0.15*n ) %>%
-  mutate( diff = (v - u) ) %>%
-  group_by(diff) %>%
-  summarize(count = n()) %>%
-  ungroup
-
-
+rest %>%
+  ggplot(aes(x = diff, color = dep)) +
+  geom_density()
 
 
 ```
+
+
+
 
 
 
