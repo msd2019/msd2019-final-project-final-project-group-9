@@ -32,9 +32,9 @@ for( dep in c('ComputerScience','Business', 'History' ) ){
 
 #Reading the tables
   
-edgelist = read.table( paste(dep, '_edgelist.txt', sep = ""), header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
+edgelist = read.table( paste('data/', dep, '_edgelist.txt', sep = ""), header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
 
-vertex = read.table(file  = paste(dep, '_vertexlist.txt', sep = ""), sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'institution'))
+vertex = read.table(file  = paste('data/', dep, '_vertexlist.txt', sep = ""), sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'institution'))
 
 
 
