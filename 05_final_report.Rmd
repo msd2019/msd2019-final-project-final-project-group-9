@@ -22,6 +22,7 @@ library(reldist)
 
 # Make a loop that uses the same code for the three departments, reads the data produces plot visualions, and sets up density plots
 ```{r}
+fp_prefix = 'data/original/'
 top15 = data.frame()
 rest = data.frame()
 all_edgelists = data.frame()
@@ -32,9 +33,9 @@ for( dep in c('ComputerScience','Business', 'History' ) ){
 
 #Reading the tables
   
-edgelist = read.table( paste(dep, '_edgelist.txt', sep = ""), header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
+edgelist = read.table( paste(fp_prefix, dep, '_edgelist.txt', sep = ""), header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
 
-vertex = read.table(file  = paste(dep, '_vertexlist.txt', sep = ""), sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'institution'))
+vertex = read.table(file  = paste(fp_prefix, dep, '_vertexlist.txt', sep = ""), sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'institution'))
 
 
 
