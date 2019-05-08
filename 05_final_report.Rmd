@@ -15,9 +15,32 @@ library(modelr)
 library(ggplot2)
 library(igraph)
 library(reldist)
+library(here)
 
 ```
 
+```{r read in data to sepearte categories (for fig 2)}
+
+business_edglist <- read.table(
+  file = here("data","original","Business_edgelist.txt"), 
+                                header=T, sep="")
+business_vertexlist <- read.table(
+  file = here("data","original","Business_vertexlist.txt"), 
+                                header=T, sep='\t')
+computer_science_edglist <- read.table(
+  file = here("data","original","ComputerScience_edgelist.txt"),
+                                header=T, sep="")
+computer_science_vertexlist <- read.table(
+  file = here("data","original","ComputerScience_vertexlist.txt"), 
+                                header=T, sep='\t')
+history_edglist <- read.table(
+  file = here("data","original","History_edgelist.txt"),
+                                header=T, sep="")
+history_vertexlist <- read.table(
+  file = here("data","original","History_vertexlist.txt"), 
+                                header=T, sep='\t')
+
+```
 
 
 # Make a loop that uses the same code for the three departments, reads the data produces plot visualions, and sets up density plots
@@ -136,7 +159,109 @@ all_edgelists = rbind(all_edgelists = edgelist)
 all_vertexes = rbind(all_vertexes, vertex)
 }
 ```
+#Plotting Figure 2 
 
+```{r plot-neighbors-vs-node}
+
+total_placements_biz <- business_edglist %>%
+  filter(u<n()) %>%
+  summarise(rows=n())
+total_placements_biz <- as.numeric(total_placements_biz)
+
+placement_data_biz <- business_edglist %>%
+  filter(u<n()) %>%
+  group_by(u) %>%
+  summarise(faculty_produced_biz=n(),
+            fraction_placements_biz=n()/total_placements_biz) %>%
+  arrange(desc(fraction_placements_biz)) %>%
+  mutate(cum_place_percent_biz=cumsum(fraction_placements_biz)) %>%
+  mutate(fraction_schools_biz=row_number()/n()) %>%
+  ungroup(business_edglist)
+
+test <- business_edglist %>%
+  filter(v<n()) %>%
+  group_by(v) %>%
+  summarise(faculty_hired_biz=n()) %>%
+  arrange(desc(faculty_hired_biz)) %>%
+  ungroup(business_edglist)
+
+colnames(test) <- c("u","faculty_hired_biz")
+
+biz_data <- merge(placement_data_biz,test, by="u")
+
+biz_data <- biz_data %>%
+  mutate(kout=ifelse(faculty_produced_biz>faculty_hired_biz,1,0)) %>%
+  group_by(faculty_produced_biz) %>%
+  summarise(greater_than_k=sum(kout)) %>%
+  ungroup()%>%
+  arrange(desc(faculty_produced_biz))%>%
+  mutate(frac_great_than_k=cumsum(greater_than_k)/sum(greater_than_k))
+
+biz_data%>%
+ggplot()+
+  geom_point(aes(x=faculty_produced_biz,y=frac_great_than_k))+
+   scale_y_log10(breaks = seq(.01,.1,1))
+
+
+
+
+
+total_placements_cs <- computer_science_edglist %>%
+  filter(u<n()) %>%
+  summarise(rows=n())
+total_placements_cs <- as.numeric(total_placements_cs)
+
+placement_data_cs <- computer_science_edglist %>%
+  filter(u<n()) %>%
+  group_by(u) %>%
+  summarise(faculty_produced_cs=n(),
+            fraction_placements_cs=n()/total_placements_cs) %>%
+  arrange(desc(fraction_placements_cs)) %>%
+  mutate(cum_place_percent_cs=cumsum(fraction_placements_cs)) %>%
+  mutate(fraction_schools_cs=row_number()/n())
+
+
+total_placements_hs <- history_edglist %>%
+  filter(u<n()) %>%
+  summarise(rows=n())
+total_placements_hs <- as.numeric(total_placements_hs)
+
+placement_data_hs <- history_edglist %>%
+  filter(u<n()) %>%
+  group_by(u) %>%
+  summarise(faculty_produced_hs=n(),
+            fraction_placements_hs=n()/total_placements_hs) %>%
+  arrange(desc(fraction_placements_hs)) %>%
+  mutate(cum_place_percent_hs=cumsum(fraction_placements_hs)) %>%
+  mutate(fraction_schools_hs=row_number()/n())
+
+x <- c(0,.5,1)
+y <- c(0,.5,1)
+equality_line <- data.frame(x,y)
+
+ggplot()+
+  geom_point(data = placement_data_cs, 
+             aes(x=fraction_schools_cs,y=cum_place_percent_cs, color="Computer Science"))+
+  geom_line(data = placement_data_cs, 
+             aes(x=fraction_schools_cs,y=cum_place_percent_cs, color="Computer Science"))+
+  geom_point(data = placement_data_biz, 
+             aes(x=fraction_schools_biz,y=cum_place_percent_biz, color="Business"))+
+  geom_line(data = placement_data_biz, 
+             aes(x=fraction_schools_biz,y=cum_place_percent_biz, color="Business"))+
+  geom_point(data = placement_data_hs, 
+             aes(x=fraction_schools_hs,y=cum_place_percent_hs, color="History"))+
+  geom_line(data = placement_data_hs, 
+             aes(x=fraction_schools_hs,y=cum_place_percent_hs, color="History"))+
+  scale_x_continuous(breaks = seq(0, 1, by = 0.25))+
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1))+
+  geom_abline(intercept = 0,slope = 1)+
+  geom_text(aes(x = .5, y = .55, label = "Equality line", angle = 40))+
+  geom_area(data=equality_line, aes(x=x, y=y), fill="#D3D3D3")+
+  xlab("Fraction of institutions")+
+  ylab("Fraction of faculty produced")
+  
+  
+```
 # Density plots for Fig 3
 
 ```{r}
