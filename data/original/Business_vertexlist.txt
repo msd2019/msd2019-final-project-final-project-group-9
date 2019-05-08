@@ -1,4 +1,4 @@
-u	pi	USN2012	NRC--	Region  	institution
+# u	pi	USN2012	NRC--	Region  	institution
 1	1.19	1	.	West     	Stanford University
 2	2.28	3	.	Northeast	MIT
 3	4.39	2	.	Northeast	Harvard University

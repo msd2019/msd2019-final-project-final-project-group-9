@@ -1,4 +1,4 @@
-u	v	rank	gender
+# u	v	rank	gender
 1	1	Assoc	F
 1	1	Full	F
 1	1	Full	F

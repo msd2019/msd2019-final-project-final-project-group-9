@@ -1,4 +1,4 @@
-u	pi	USN2009	NRC2010	Region  	institution
+# u	pi	USN2009	NRC2010	Region  	institution
 1	1.54	5	1	Northeast	Harvard University
 2	2.41	1	12	Northeast	Yale University
 3	4.80	1	14	West     	UC Berkeley
