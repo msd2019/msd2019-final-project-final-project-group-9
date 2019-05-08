@@ -16,147 +16,155 @@ library(ggplot2)
 library(igraph)
 library(reldist)
 library(here)
-
 ```
 
-```{r read in data to sepearte categories (for fig 2)}
+```{r read data}
+fp_prefix <- "data/original/"
 
-business_edglist <- read.table(
-  file = here("data","original","Business_edgelist.txt"), 
-                                header=T, sep="")
+# Read by department data individually
+
+business_edglist <- read.table(paste(fp_prefix, "Business_edgelist.txt", sep = ""),
+  header = FALSE,
+  col.names = c("u", "v", "rank", "gender")
+)
 business_vertexlist <- read.table(
-  file = here("data","original","Business_vertexlist.txt"), 
-                                header=T, sep='\t')
-computer_science_edglist <- read.table(
-  file = here("data","original","ComputerScience_edgelist.txt"),
-                                header=T, sep="")
-computer_science_vertexlist <- read.table(
-  file = here("data","original","ComputerScience_vertexlist.txt"), 
-                                header=T, sep='\t')
-history_edglist <- read.table(
-  file = here("data","original","History_edgelist.txt"),
-                                header=T, sep="")
-history_vertexlist <- read.table(
-  file = here("data","original","History_vertexlist.txt"), 
-                                header=T, sep='\t')
+  file = paste(fp_prefix, "Business_vertexlist.txt", sep = ""),
+  sep = "	", header = FALSE,
+  col.names = c("u", "pi", "USN2009", "NRC2010", "Region", "institution")
+)
 
+computer_science_edglist <- read.table(paste(fp_prefix, "ComputerScience_edgelist.txt", sep = ""),
+  header = FALSE,
+  col.names = c("u", "v", "rank", "gender")
+)
+computer_science_vertexlist <- read.table(
+  file = paste(fp_prefix, "ComputerScience_vertexlist.txt", sep = ""),
+  sep = "	", header = FALSE,
+  col.names = c("u", "pi", "USN2009", "NRC2010", "Region", "institution")
+)
+
+history_edglist <- read.table(paste(fp_prefix, "History_edgelist.txt", sep = ""),
+  header = FALSE,
+  col.names = c("u", "v", "rank", "gender")
+)
+history_vertexlist <- read.table(
+  file = paste(fp_prefix, "History_vertexlist.txt", sep = ""),
+  sep = "	", header = FALSE,
+  col.names = c("u", "pi", "USN2009", "NRC2010", "Region", "institution")
+)
+
+# Store data in list structure for iterations
+
+data_list <- list(
+  "Buisness" = list("edge" = business_edglist, "vert" = business_vertexlist),
+  "Computer_Science" = list("edge" = computer_science_edglist, "vert" = computer_science_vertexlist),
+  "History" = list("edge" = history_edglist, "vert" = history_vertexlist)
+)
 ```
 
 
 # Make a loop that uses the same code for the three departments, reads the data produces plot visualions, and sets up density plots
 ```{r}
-fp_prefix = 'data/original/'
-top15 = data.frame()
-rest = data.frame()
-all_edgelists = data.frame()
-all_vertexes = data.frame()
+top15 <- data.frame()
+rest <- data.frame()
+all_edgelists <- data.frame()
+all_vertexes <- data.frame()
 
 
-for( dep in c('ComputerScience','Business', 'History' ) ){
+for (dep in names(data_list)) {
+  edgelist <- data_list[[dep]]$edge
+  vertex <- data_list[[dep]]$vert
 
-#Reading the tables
-  
-edgelist = read.table( paste(fp_prefix, dep, '_edgelist.txt', sep = ""), header = FALSE,  col.names = c('u', 'v', 'rank', 'gender'))
-
-vertex = read.table(file  = paste(fp_prefix, dep, '_vertexlist.txt', sep = ""), sep = '\t', header = FALSE, col.names = c('u', 'pi', 'USN2009', 'NRC2010', 'Region', 'institution'))
-
-
-
-#making a table that includes the weight of each edge
-weighted_edgelist = edgelist %>% 
-  group_by(v, u) %>%
-  summarize( count = n()) %>%
-  ungroup() %>%
-  left_join( vertex, by = c('v'= 'u')) %>%
-  select(v, u, count, institution)
+  # making a table that includes the weight of each edge
+  weighted_edgelist <- edgelist %>%
+    group_by(v, u) %>%
+    summarize(count = n()) %>%
+    ungroup() %>%
+    left_join(vertex, by = c("v" = "u")) %>%
+    select(v, u, count, institution)
 
 
-#fitlering the weighted edgelist to make an easier to look at plot (like in Fig. 1)
-smaller = weighted_edgelist %>%
-  filter( u <= 10 , v <= 10 )
+  # fitlering the weighted edgelist to make an easier to look at plot (like in Fig. 1)
+  smaller <- weighted_edgelist %>%
+    filter(u <= 10, v <= 10)
 
-#Then plotting this network of the top schools
-smaller_graph = smaller %>%
-   graph_from_data_frame(directed = TRUE)
-
-
-plot(smaller_graph, vertex_size = 2 ,edge.width=E(smaller_graph)$count/2,
-     layout = layout_in_circle(smaller_graph, order = V(smaller_graph)), 
-     vertex.label = unique( E(smaller_graph)$institution ), 
-     main = paste(dep, 'Department', sep = " ")
-     )
+  # Then plotting this network of the top schools
+  smaller_graph <- smaller %>%
+    graph_from_data_frame(directed = TRUE)
 
 
-
-num_schools = max(edgelist$u)
-
-#making another set of the full network to make a network plot like in Fig. 3)
-
-prestige_list = weighted_edgelist %>%
-  filter(v != num_schools, u != num_schools) %>%
-  group_by(v) %>%
-  summarize( top_school =  as.double( v <= 0.15*num_schools)[1], 
-  prestige = num_schools - v[1] ) %>%
-  ungroup()
-
-
-#Setting up the network to plot Fig. 3
-graph = weighted_edgelist %>%
-  filter( u != v, u %in%prestige_list$v, v %in% prestige_list$v  ) %>%
-  graph_from_data_frame(directed = FALSE, vertices = prestige_list    )
-
-
-plot( graph, vertex.size = 2 + 3*V(graph)$top_school + V(graph)$prestige/15,
-      vertex.color = 3 + V(graph)$top_school,
-      vertex.label = NA, 
-      main = paste(dep, 'Department', sep = " ")
-      )
-
-
-
-
-#making dataframes of the top 15 of institutions with the differences in prestige from phd to faculty shools
-#This is to make the density plots in Fig. 3
-#Am doing rbing to keep data from all the departments, but addign the label of department first
-
-edgelist$dep = dep
-vertex$dep = dep
-
-
-top15 = rbind(top15,  edgelist %>%
-  filter(u <= .15*num_schools) %>%
-  mutate(diff = (v - u)/num_schools) %>%
-  select(diff, dep, rank)
-  )
-
-#doing the same thing for the rest of the institutions
-rest = rbind(rest,  edgelist %>%
-  filter(u > .15*num_schools) %>%
-  filter( u < num_schools ) %>%
-  mutate(diff = (v - u)/num_schools) %>%
-  select(diff, dep, rank)
+  plot(smaller_graph,
+    vertex_size = 2, edge.width = E(smaller_graph)$count / 2,
+    layout = layout_in_circle(smaller_graph, order = V(smaller_graph)),
+    vertex.label = unique(E(smaller_graph)$institution),
+    main = paste(dep, "Department", sep = " ")
   )
 
 
+  num_schools <- max(edgelist$u)
 
-#Finding the gini coefficient for each department, using the library reldist
-
-
-school_counts = edgelist %>%
-  filter( v != num_schools) %>%
-  group_by(v) %>%
-  summarize(counts = n() ) %>%
+  # making another set of the full network to make a network plot like in Fig. 3
+  prestige_list <- weighted_edgelist %>%
+    filter(v != num_schools, u != num_schools) %>%
+    group_by(v) %>%
+    summarize(
+      top_school = as.double(v <= 0.15 * num_schools)[1],
+      prestige = num_schools - v[1]
+    ) %>%
     ungroup()
 
-#Here the coefficients look very small when looking at it split by department
-G = gini( school_counts$counts, runif(n=nrow(school_counts)) )
 
-cat('\n', dep, "Gini Coefficient:", G)
+  # Setting up the network to plot Fig. 3
+  graph <- weighted_edgelist %>%
+    filter(u != v, u %in% prestige_list$v, v %in% prestige_list$v) %>%
+    graph_from_data_frame(directed = FALSE, vertices = prestige_list)
 
 
-#save all the edgelists and vertex lists into one dataframe (with the department labels) so its easy to do stuff with them outside this loop
-all_edgelists = rbind(all_edgelists = edgelist)
-all_vertexes = rbind(all_vertexes, vertex)
+  plot(graph,
+    vertex.size = 2 + 3 * V(graph)$top_school + V(graph)$prestige / 15,
+    vertex.color = 3 + V(graph)$top_school,
+    vertex.label = NA,
+    main = paste(dep, "Department", sep = " ")
+  )
+
+
+  # making dataframes of the top 15 of institutions with the differences in prestige from phd to faculty shools
+  # This is to make the density plots in Fig. 3
+  # Am doing rbing to keep data from all the departments, but addign the label of department first
+
+  edgelist$dep <- dep
+  vertex$dep <- dep
+
+
+  top15 <- rbind(top15, edgelist %>%
+    filter(u <= .15 * num_schools) %>%
+    mutate(diff = (v - u) / num_schools) %>%
+    select(diff, dep, rank))
+
+  # doing the same thing for the rest of the institutions
+  rest <- rbind(rest, edgelist %>%
+    filter(u > .15 * num_schools) %>%
+    filter(u < num_schools) %>%
+    mutate(diff = (v - u) / num_schools) %>%
+    select(diff, dep, rank))
+
+  # Finding the gini coefficient for each department, using the library reldist
+  school_counts <- edgelist %>%
+    filter(v != num_schools) %>%
+    group_by(v) %>%
+    summarize(counts = n()) %>%
+    ungroup()
+
+  # Here the coefficients look very small when looking at it split by department
+  G <- gini(school_counts$counts, runif(n = nrow(school_counts)))
+
+  cat("
+", dep, "Gini Coefficient:", G)
+
+
+  # save all the edgelists and vertex lists into one dataframe (with the department labels) so its easy to do stuff with them outside this loop
+  all_edgelists <- rbind(all_edgelists = edgelist)
+  all_vertexes <- rbind(all_vertexes, vertex)
 }
 ```
 #Plotting Figure 2 
@@ -164,133 +172,142 @@ all_vertexes = rbind(all_vertexes, vertex)
 ```{r plot-neighbors-vs-node}
 
 total_placements_biz <- business_edglist %>%
-  filter(u<n()) %>%
-  summarise(rows=n())
+  filter(u < n()) %>%
+  summarise(rows = n())
 total_placements_biz <- as.numeric(total_placements_biz)
 
 placement_data_biz <- business_edglist %>%
-  filter(u<n()) %>%
+  filter(u < n()) %>%
   group_by(u) %>%
-  summarise(faculty_produced_biz=n(),
-            fraction_placements_biz=n()/total_placements_biz) %>%
+  summarise(
+    faculty_produced_biz = n(),
+    fraction_placements_biz = n() / total_placements_biz
+  ) %>%
   arrange(desc(fraction_placements_biz)) %>%
-  mutate(cum_place_percent_biz=cumsum(fraction_placements_biz)) %>%
-  mutate(fraction_schools_biz=row_number()/n()) %>%
+  mutate(cum_place_percent_biz = cumsum(fraction_placements_biz)) %>%
+  mutate(fraction_schools_biz = row_number() / n()) %>%
   ungroup(business_edglist)
 
 test <- business_edglist %>%
-  filter(v<n()) %>%
+  filter(v < n()) %>%
   group_by(v) %>%
-  summarise(faculty_hired_biz=n()) %>%
+  summarise(faculty_hired_biz = n()) %>%
   arrange(desc(faculty_hired_biz)) %>%
   ungroup(business_edglist)
 
-colnames(test) <- c("u","faculty_hired_biz")
+colnames(test) <- c("u", "faculty_hired_biz")
 
-biz_data <- merge(placement_data_biz,test, by="u")
+biz_data <- merge(placement_data_biz, test, by = "u")
 
 biz_data <- biz_data %>%
-  mutate(kout=ifelse(faculty_produced_biz>faculty_hired_biz,1,0)) %>%
+  mutate(kout = ifelse(faculty_produced_biz > faculty_hired_biz, 1, 0)) %>%
   group_by(faculty_produced_biz) %>%
-  summarise(greater_than_k=sum(kout)) %>%
-  ungroup()%>%
-  arrange(desc(faculty_produced_biz))%>%
-  mutate(frac_great_than_k=cumsum(greater_than_k)/sum(greater_than_k))
+  summarise(greater_than_k = sum(kout)) %>%
+  ungroup() %>%
+  arrange(desc(faculty_produced_biz)) %>%
+  mutate(frac_great_than_k = cumsum(greater_than_k) / sum(greater_than_k))
 
-biz_data%>%
-ggplot()+
-  geom_point(aes(x=faculty_produced_biz,y=frac_great_than_k))+
-   scale_y_log10(breaks = seq(.01,.1,1))
-
-
-
-
+biz_data %>%
+  ggplot() +
+  geom_point(aes(x = faculty_produced_biz, y = frac_great_than_k)) +
+  scale_y_log10(breaks = seq(.01, .1, 1))
 
 total_placements_cs <- computer_science_edglist %>%
-  filter(u<n()) %>%
-  summarise(rows=n())
+  filter(u < n()) %>%
+  summarise(rows = n())
 total_placements_cs <- as.numeric(total_placements_cs)
 
 placement_data_cs <- computer_science_edglist %>%
-  filter(u<n()) %>%
+  filter(u < n()) %>%
   group_by(u) %>%
-  summarise(faculty_produced_cs=n(),
-            fraction_placements_cs=n()/total_placements_cs) %>%
+  summarise(
+    faculty_produced_cs = n(),
+    fraction_placements_cs = n() / total_placements_cs
+  ) %>%
   arrange(desc(fraction_placements_cs)) %>%
-  mutate(cum_place_percent_cs=cumsum(fraction_placements_cs)) %>%
-  mutate(fraction_schools_cs=row_number()/n())
-
+  mutate(cum_place_percent_cs = cumsum(fraction_placements_cs)) %>%
+  mutate(fraction_schools_cs = row_number() / n())
 
 total_placements_hs <- history_edglist %>%
-  filter(u<n()) %>%
-  summarise(rows=n())
+  filter(u < n()) %>%
+  summarise(rows = n())
 total_placements_hs <- as.numeric(total_placements_hs)
 
 placement_data_hs <- history_edglist %>%
-  filter(u<n()) %>%
+  filter(u < n()) %>%
   group_by(u) %>%
-  summarise(faculty_produced_hs=n(),
-            fraction_placements_hs=n()/total_placements_hs) %>%
+  summarise(
+    faculty_produced_hs = n(),
+    fraction_placements_hs = n() / total_placements_hs
+  ) %>%
   arrange(desc(fraction_placements_hs)) %>%
-  mutate(cum_place_percent_hs=cumsum(fraction_placements_hs)) %>%
-  mutate(fraction_schools_hs=row_number()/n())
+  mutate(cum_place_percent_hs = cumsum(fraction_placements_hs)) %>%
+  mutate(fraction_schools_hs = row_number() / n())
 
-x <- c(0,.5,1)
-y <- c(0,.5,1)
-equality_line <- data.frame(x,y)
+x <- c(0, .5, 1)
+y <- c(0, .5, 1)
+equality_line <- data.frame(x, y)
 
-ggplot()+
-  geom_point(data = placement_data_cs, 
-             aes(x=fraction_schools_cs,y=cum_place_percent_cs, color="Computer Science"))+
-  geom_line(data = placement_data_cs, 
-             aes(x=fraction_schools_cs,y=cum_place_percent_cs, color="Computer Science"))+
-  geom_point(data = placement_data_biz, 
-             aes(x=fraction_schools_biz,y=cum_place_percent_biz, color="Business"))+
-  geom_line(data = placement_data_biz, 
-             aes(x=fraction_schools_biz,y=cum_place_percent_biz, color="Business"))+
-  geom_point(data = placement_data_hs, 
-             aes(x=fraction_schools_hs,y=cum_place_percent_hs, color="History"))+
-  geom_line(data = placement_data_hs, 
-             aes(x=fraction_schools_hs,y=cum_place_percent_hs, color="History"))+
-  scale_x_continuous(breaks = seq(0, 1, by = 0.25))+
-  scale_y_continuous(breaks = seq(0, 1, by = 0.1))+
-  geom_abline(intercept = 0,slope = 1)+
-  geom_text(aes(x = .5, y = .55, label = "Equality line", angle = 40))+
-  geom_area(data=equality_line, aes(x=x, y=y), fill="#D3D3D3")+
-  xlab("Fraction of institutions")+
+ggplot() +
+  geom_point(
+    data = placement_data_cs,
+    aes(x = fraction_schools_cs, y = cum_place_percent_cs, color = "Computer Science")
+  ) +
+  geom_line(
+    data = placement_data_cs,
+    aes(x = fraction_schools_cs, y = cum_place_percent_cs, color = "Computer Science")
+  ) +
+  geom_point(
+    data = placement_data_biz,
+    aes(x = fraction_schools_biz, y = cum_place_percent_biz, color = "Business")
+  ) +
+  geom_line(
+    data = placement_data_biz,
+    aes(x = fraction_schools_biz, y = cum_place_percent_biz, color = "Business")
+  ) +
+  geom_point(
+    data = placement_data_hs,
+    aes(x = fraction_schools_hs, y = cum_place_percent_hs, color = "History")
+  ) +
+  geom_line(
+    data = placement_data_hs,
+    aes(x = fraction_schools_hs, y = cum_place_percent_hs, color = "History")
+  ) +
+  scale_x_continuous(breaks = seq(0, 1, by = 0.25)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1)) +
+  geom_abline(intercept = 0, slope = 1) +
+  geom_text(aes(x = .5, y = .55, label = "Equality line", angle = 40)) +
+  geom_area(data = equality_line, aes(x = x, y = y), fill = "#D3D3D3") +
+  xlab("Fraction of institutions") +
   ylab("Fraction of faculty produced")
-  
-  
 ```
 # Density plots for Fig 3
 
 ```{r}
-#Making the density plots here
+# Making the density plots here
 
 top15 %>%
-  ggplot(aes(x = diff, color = dep) ) +
+  ggplot(aes(x = diff, color = dep)) +
   geom_density() +
-  geom_vline(xintercept = 0, linetype = 'dashed' ) +
-  ylim(0, 2.8) + 
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  ylim(0, 2.8) +
   xlim(-.5, 1) +
-  ggtitle("Top 15% of Institutions") + 
-  ylab('Density') +
-  xlab('Relative change in rank from Ph.D Institution') +
-  labs(color = 'Department')
+  ggtitle("Top 15% of Institutions") +
+  ylab("Density") +
+  xlab("Relative change in rank from Ph.D Institution") +
+  labs(color = "Department")
 
 
 rest %>%
   ggplot(aes(x = diff, color = dep)) +
   geom_density() +
-  geom_vline(xintercept = 0, linetype = 'dashed' ) +
-  ylim(0, 2.8) + 
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  ylim(0, 2.8) +
   xlim(-.5, 1) +
-  ggtitle("All other Institutions") + 
-  ylab('Density') +
-  xlab('Relative change in rank from Ph.D Institution') +
-  labs(color = 'Department')
-
-
+  ggtitle("All other Institutions") +
+  ylab("Density") +
+  xlab("Relative change in rank from Ph.D Institution") +
+  labs(color = "Department")
 ```
 
 
@@ -302,30 +319,28 @@ Below are density plots of prestige change for top15 and rest while splitting by
 
 top15 %>%
   mutate(rankdep = paste(rank, dep)) %>%
-  ggplot(aes(x = diff, color = rankdep) ) +
+  ggplot(aes(x = diff, color = rankdep)) +
   geom_density() +
-  geom_vline(xintercept = 0, linetype = 'dashed' ) +
-  ylim(0, 2.8) + 
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  ylim(0, 2.8) +
   xlim(-.5, 1) +
-  ggtitle("Top 15% of Institutions") + 
-  ylab('Density') +
-  xlab('Relative change in rank from Ph.D Institution') +
-  labs(color = 'Department')
+  ggtitle("Top 15% of Institutions") +
+  ylab("Density") +
+  xlab("Relative change in rank from Ph.D Institution") +
+  labs(color = "Department")
 
 
 rest %>%
   mutate(rankdep = paste(rank, dep)) %>%
-  ggplot(aes(x = diff, color = rankdep) ) +
+  ggplot(aes(x = diff, color = rankdep)) +
   geom_density() +
-  geom_vline(xintercept = 0, linetype = 'dashed' ) +
-  ylim(0, 2.8) + 
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  ylim(0, 2.8) +
   xlim(-.5, 1) +
-  ggtitle("All other Institutions") + 
-  ylab('Density') +
-  xlab('Relative change in rank from Ph.D Institution') +
-  labs(color = 'Rank and Department')
-
-
+  ggtitle("All other Institutions") +
+  ylab("Density") +
+  xlab("Relative change in rank from Ph.D Institution") +
+  labs(color = "Rank and Department")
 ```
 
 
@@ -336,17 +351,16 @@ Can see a slightly larger portion of "full" faculy staying within their Ph.d ins
 
 ```{r}
 
-rbind(top15, rest)%>%
-  ggplot(aes(x = diff, color = rank) ) +
+rbind(top15, rest) %>%
+  ggplot(aes(x = diff, color = rank)) +
   geom_density() +
-  geom_vline(xintercept = 0, linetype = 'dashed' ) +
-  ylim(0, 2.8) + 
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  ylim(0, 2.8) +
   xlim(-.5, 1) +
-  ggtitle("All Institutions") + 
-  ylab('Density') +
-  xlab('Relative change in rank from Ph.D Institution') +
-  labs(color = 'Rank')
-
+  ggtitle("All Institutions") +
+  ylab("Density") +
+  xlab("Relative change in rank from Ph.D Institution") +
+  labs(color = "Rank")
 ```
 
 
@@ -356,19 +370,18 @@ rbind(top15, rest)%>%
 # looking at gini cofficient with all the data, still not able ot get the number they got in the original paper
 
 ```{r}
-school_counts = all_edgelists %>%
-  left_join( vertex, by = c('v'= 'u')) %>%
-  select(v, u,  institution) %>%
-  filter( institution != 'All others') %>%
+school_counts <- all_edgelists %>%
+  left_join(vertex, by = c("v" = "u")) %>%
+  select(v, u, institution) %>%
+  filter(institution != "All others") %>%
   group_by(institution) %>%
-  summarize(counts = n() ) %>%
-    ungroup()
+  summarize(counts = n()) %>%
+  ungroup()
 
-#Here the coefficients look very small when looking at it split by department
-G = gini( school_counts$counts )
+# Here the coefficients look very small when looking at it split by department
+G <- gini(school_counts$counts)
 
 cat("Gini Coefficient for whole dataset:", G)
-
 ```
 
 
