@@ -16,6 +16,7 @@ library(ggplot2)
 library(igraph)
 library(reldist)
 library(here)
+library(modelr)
 ```
 
 ```{r read data}
@@ -163,18 +164,22 @@ for (dep in names(data_list)) {
 ", dep, "Gini Coefficient:", G)
 
 
+  
+  
   # save all the edgelists and vertex lists into one dataframe (with the department labels) so its easy to do stuff with them outside this loop
-  all_edgelists <- rbind(all_edgelists = edgelist)
+  all_edgelists <- rbind(all_edgelists, edgelist)
   all_vertexes <- rbind(all_vertexes, vertex)
   
   
   
   
-  #Setting up Figure 3 plots
-  total_placements <- edgelist %>%
+  #Setting up Figure 2 plots
+ total_placements <- edgelist %>%
   filter(u < n()) %>%
   summarise(rows = n())
 total_placements <- as.numeric(total_placements)
+
+
 
 placement_data <- rbind(placement_data, edgelist %>%
   filter(u < n()) %>%
@@ -191,11 +196,7 @@ placement_data <- rbind(placement_data, edgelist %>%
   
   
   
-  
-  
-  
-  
-  
+
   
 }
 ```
@@ -220,8 +221,8 @@ placement_data %>%
   labs(color = "Department")
 
 
-
 ```
+
 
 
 
@@ -315,7 +316,7 @@ rbind(top15, rest) %>%
 
 ```{r}
 school_counts <- all_edgelists %>%
-  left_join(vertex, by = c("v" = "u")) %>%
+  left_join(all_vertexes, by = c("v" = "u", 'dep' = 'dep')) %>%
   select(v, u, institution) %>%
   filter(institution != "All others") %>%
   group_by(institution) %>%
@@ -327,6 +328,48 @@ G <- gini(school_counts$counts)
 
 cat("Gini Coefficient for whole dataset:", G)
 ```
+
+
+
+#Making a regressor predicting the rank of the school people join frmo gender and 
+
+```{r}
+
+regress <- all_edgelists %>%
+  mutate( y = u - v ) %>%
+   left_join(all_vertexes, by = c("v" = "u", 'dep' = 'dep')) %>%
+  filter(institution != "All others") %>%
+  mutate( num_gender = gender == 'F') %>%
+  select(y, v, num_gender)
+
+
+#I could do train/test split, but the model's not very good, and we're really just doing thsi to interpret the coefficients
+ model <- lm(y ~ (v + num_gender), data = regress)
+ regress$pred = predict(model, regress)
+ 
+ regress %>%
+   ggplot(aes(x = v, y = y)) +
+   geom_point() +
+   geom_line(aes(y = pred), color = 'red') +
+   ylab('Change in Rank from \nDoctoal to Faculty Institution') + 
+   xlab('Doctoral Institution Rank') +
+   ggtitle('Predicting Prestige Changes' )
+ 
+ 
+ 
+cat('\ncoefficients:\n')
+model$coefficients
+cat('\nR squared:', summary(model)$r.squared )
+#we see a pretty bad r^2 also.... kind of expected this
+
+
+```
+
+We can see that the model predicts women to go to higher prestige schools relative to their doctoral school, although only by about 4 ranks, so not a very big difference. We can also see that as people go to lower prestige schools, the model predicts they will go to higher prestige schools. Of course, this doesn't really tell the full story, since by looking at the graph we can that there are more points for the higher prestige doctoral schools (x close to 1), and this model obviously doesn't capture the people who attended s these schools but didn't go on to become faculty professors. 
+
+
+
+
 
 
 
