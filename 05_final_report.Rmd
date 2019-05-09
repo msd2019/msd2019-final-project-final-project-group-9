@@ -361,17 +361,89 @@ Doctoal to Faculty Institution") +
 
 
 
+summary(model)
+```
+
+We can see that the model predicts women to go to higher prestige schools relative to their doctoral school (the difference is statistically significant), although only by about 4 ranks, so not a very big difference. We can also see that as people go to lower prestige schools, the model predicts they will go to higher prestige schools. Of course, this doesn't really tell the full story, since by looking at the graph we can that there are more points for the higher prestige doctoral schools (x close to 1), and this model obviously doesn't capture the people who attended s these schools but didn't go on to become faculty professors.
+
+
+# trying to predict school prestige and rank from doctoral school and gender
+
+```{r}
+
+#testing what how much prestige points yield the best, how to weigh k
+
+
+for(k in c(0, 0.5, 1, 2, 4, 6, 8, 10, 50)){
+
+cat('\nk =', k)
+
+rank_regress = all_edgelists %>%
+  mutate(asst  = as.double(rank == 'Asst') ) %>%
+  mutate(full  = as.double(rank == 'Full') ) %>%
+  mutate(assoc  = as.double(rank == 'Assoc') ) %>%
+  mutate(y = (u - v) - k*( 3*full + 2*assoc + asst) ) %>%
+  left_join(all_vertexes, by = c("v" = "u", "dep" = "dep")) %>%
+  filter(institution != "All others") %>%
+  mutate(num_gender = gender == "F") %>%
+  select(y, v, num_gender)
+
+  
+# I could do train/test split, but the model's not very good, and we're really just doing thsi to interpret the coefficients
+model <- lm(y ~ (v + num_gender), data = rank_regress)
+
+
+cat("
+R squared:", summary(model)$r.squared)
+ 
+#We can see that scaling the change in prestige by the faculty rank doesn't help the predictive power at all
+
+}
+```
+  
+  
+  
+  
+#Using faculty ranks as predictors
+```{r}
+
+rank_predictors = 
+  all_edgelists %>%
+  mutate(asst  = as.double(rank == 'Asst') ) %>%
+  mutate(full  = as.double(rank == 'Full') ) %>%
+  mutate(assoc  = as.double(rank == 'Assoc') ) %>%
+  mutate(y = (u - v) ) %>%
+  left_join(all_vertexes, by = c("v" = "u", "dep" = "dep")) %>%
+  filter(institution != "All others") %>%
+  mutate(num_gender = gender == "F") %>%
+  select(y, v, num_gender, full, assoc )
+
+
+model <- lm(y ~ v + num_gender + assoc + full , data = rank_predictors)
+rank_predictors$pred <- predict(model, rank_predictors)
+
+rank_predictors %>%
+  ggplot(aes(x = v, y = y)) +
+  geom_point() +
+  geom_line(aes(y = pred), color = "red") +
+  ylab("Change in Rank from 
+Doctoal to Faculty Institution") +
+  xlab("Doctoral Institution Rank") +
+  ggtitle("Predicting Prestige Changes")
+
+
+
 cat("
 coefficients:
 ")
-model$coefficients
+summary(model)
 cat("
 R squared:", summary(model)$r.squared)
-# we see a pretty bad r^2 also.... kind of expected this
+
 ```
 
-We can see that the model predicts women to go to higher prestige schools relative to their doctoral school, although only by about 4 ranks, so not a very big difference. We can also see that as people go to lower prestige schools, the model predicts they will go to higher prestige schools. Of course, this doesn't really tell the full story, since by looking at the graph we can that there are more points for the higher prestige doctoral schools (x close to 1), and this model obviously doesn't capture the people who attended s these schools but didn't go on to become faculty professors. 
-
+We can see that faculty with a rank of full have a slightly bigger difference in prestige, going to less prestigious schools, although its such a small difference I don't believe it means very much. For that coefficient we do see a small p-value, and it makes intuitive sense that it is easier to get a full faculty position at a lower prestige school. Still, the difference is not nearly as big as I would have expected. 
+As for Associate and Assistants, we see no statistically significant difference between the two coefficients. 
 
 
 
