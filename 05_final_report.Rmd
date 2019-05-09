@@ -1,13 +1,21 @@
 ---
 title: "MSD 2019 Final Project"
-subtitle: "A replication and extension of < PAPER TITLE > by < ORIGINAL AUTHORS >, < PUBLISHED IN >"
-author: "Your Names (your unis)"
+subtitle: "A replication and extension of Systematic Inequality and Hierarchy in Faculty Hiring Networks by Aaron Clauset, Samuel Arbesman, Daniel B. Larremore, Science Advances 12 Feb 2015, Vol. 1, No. 1 "
+author: "George Austin (gia2105), Calvin Tong (cyt2113), Mia Fryer (mzf2106)"
 date: '`r Sys.time()`'
 output:
   pdf_document:
     toc: yes
     toc_depth: 3
 ---
+
+# Introduction
+
+This report represents a recreation and extension of the “Systematic inequality and hierarchy in faculty hiring networks” by Aaron Clauset, Samuel Arbesman and Daniel Larremore published in Science Advances in 2015. The paper explores the role of gender and institutional prestige in the faculty job market and finds that it is a deeply hierarchical and unequal system. Analyzing these effects is important as institutional hiring and faculty quality affects all aspects of university life both for the hired scholars as well as their undergraduate students. Furthermore, universities are often ideally seen as meritocracies with tests, grades, and journal publications allowing one's personal ability, as opposed to their networking ability, to shine. Debunking this myth will allow us to make the changes necessary to move closer to this ideal in the future. 
+
+The main contribution of the paper is the dataset, which has been painstakingly scraped and cleaned from a multitude of different sources. The data represents the placement of 18924 different faculty members at 461 academic institutions across the disciplines of Business, Computer Science and History.  To explore the hierarchical structure of the departmental networks, the paper presents various figures and computations, which quantify and describe the inequality in different ways. For this report, we choose to recreate what we see as the most convincing of these results. Below we recreate, the visualization of the placement network for the top 10 schools in each department (Fig 1 top), the Lorentz curves for each department (Fig 2A), the network visualizations of the entire network for each department with the top 15% of schools highlighted (Fig 3A), and the probability distributions of the relative change in prestige rank for the top 15% of schools (Fig 3B) and all other institutions (Fig 3C). We also recreate the calculate the Gini Coefficient, which quantifies the social inequality in the network. For our extension, we attempt to predict ... 
+
+
 
 ```{r}
 library(tidyverse)
@@ -18,6 +26,8 @@ library(reldist)
 library(here)
 library(modelr)
 ```
+
+# Data Loading
 
 ```{r read data}
 fp_prefix <- "data/original/"
@@ -64,13 +74,13 @@ data_list <- list(
 ```
 
 
-# Make a loop that uses the same code for the three departments, reads the data produces plot visualions, and sets up density plots
+# Produce Network Visualizations
 ```{r}
 top15 <- data.frame()
 rest <- data.frame()
 all_edgelists <- data.frame()
 all_vertexes <- data.frame()
-placement_data = data.frame()
+placement_data <- data.frame()
 
 
 for (dep in names(data_list)) {
@@ -164,43 +174,38 @@ for (dep in names(data_list)) {
 ", dep, "Gini Coefficient:", G)
 
 
-  
-  
+
+
   # save all the edgelists and vertex lists into one dataframe (with the department labels) so its easy to do stuff with them outside this loop
   all_edgelists <- rbind(all_edgelists, edgelist)
   all_vertexes <- rbind(all_vertexes, vertex)
-  
-  
-  
-  
-  #Setting up Figure 2 plots
- total_placements <- edgelist %>%
-  filter(u < n()) %>%
-  summarise(rows = n())
-total_placements <- as.numeric(total_placements)
 
 
 
-placement_data <- rbind(placement_data, edgelist %>%
-  filter(u < n()) %>%
-  group_by(u) %>%
-  summarise(
-    faculty_produced = n(),
-    fraction_placements = n() / total_placements
-  ) %>%
-  arrange(desc(fraction_placements)) %>%
-  mutate(cum_place_percent = cumsum(fraction_placements)) %>%
-  mutate(fraction_schools = row_number() / n()) %>%
-  mutate(dep = dep) %>%
-  ungroup(edgelist) )
-  
-  
-  
 
-  
+  # Setting up Figure 2 plots
+  total_placements <- edgelist %>%
+    filter(u < n()) %>%
+    summarise(rows = n())
+  total_placements <- as.numeric(total_placements)
+
+
+
+  placement_data <- rbind(placement_data, edgelist %>%
+    filter(u < n()) %>%
+    group_by(u) %>%
+    summarise(
+      faculty_produced = n(),
+      fraction_placements = n() / total_placements
+    ) %>%
+    arrange(desc(fraction_placements)) %>%
+    mutate(cum_place_percent = cumsum(fraction_placements)) %>%
+    mutate(fraction_schools = row_number() / n()) %>%
+    mutate(dep = dep) %>%
+    ungroup(edgelist))
 }
 ```
-#Plotting Figure 2 
+# Plot Lorentz curves 
 
 ```{r}
 x <- c(0, .5, 1)
@@ -209,24 +214,22 @@ equality_line <- data.frame(x, y)
 
 placement_data %>%
   ggplot(aes(x = fraction_schools, y = cum_place_percent, color = dep)) +
-  geom_point() + 
-  geom_line() + 
+  geom_point() +
+  geom_line() +
   scale_x_continuous(breaks = seq(0, 1, by = 0.25)) +
   scale_y_continuous(breaks = seq(0, 1, by = 0.1)) +
   geom_abline(intercept = 0, slope = 1) +
   geom_text(aes(x = .5, y = .55, label = "Equality line", angle = 40)) +
   geom_area(data = equality_line, aes(x = x, y = y), fill = "#D3D3D3") +
   xlab("Fraction of institutions") +
-  ylab("Fraction of faculty produced") + 
+  ylab("Fraction of faculty produced") +
   labs(color = "Department")
-
-
 ```
 
 
 
 
-# Density plots for Fig 3
+# Faculty Placement PDFs
 
 ```{r}
 # Making the density plots here
@@ -295,7 +298,6 @@ Here is a plot of change in prestige density for the all the data, looking at sp
 Can see a slightly larger portion of "full" faculy staying within their Ph.d institution's rank. Slightly more mobility fopr Assoc and Asst, but not by much. 
 
 ```{r}
-
 rbind(top15, rest) %>%
   ggplot(aes(x = diff, color = rank)) +
   geom_density() +
@@ -312,11 +314,12 @@ rbind(top15, rest) %>%
 
 
 
-# looking at gini cofficient with all the data, still not able ot get the number they got in the original paper
+# Total Gini Coefficient 
+still not able ot get the number they got in the original paper
 
 ```{r}
 school_counts <- all_edgelists %>%
-  left_join(all_vertexes, by = c("v" = "u", 'dep' = 'dep')) %>%
+  left_join(all_vertexes, by = c("v" = "u", "dep" = "dep")) %>%
   select(v, u, institution) %>%
   filter(institution != "All others") %>%
   group_by(institution) %>%
@@ -331,44 +334,43 @@ cat("Gini Coefficient for whole dataset:", G)
 
 
 
-#Making a regressor predicting the rank of the school people join frmo gender and 
+# Predicting rank of the hiring party from gender  
 
 ```{r}
 
 regress <- all_edgelists %>%
-  mutate( y = u - v ) %>%
-   left_join(all_vertexes, by = c("v" = "u", 'dep' = 'dep')) %>%
+  mutate(y = u - v) %>%
+  left_join(all_vertexes, by = c("v" = "u", "dep" = "dep")) %>%
   filter(institution != "All others") %>%
-  mutate( num_gender = gender == 'F') %>%
+  mutate(num_gender = gender == "F") %>%
   select(y, v, num_gender)
 
 
-#I could do train/test split, but the model's not very good, and we're really just doing thsi to interpret the coefficients
- model <- lm(y ~ (v + num_gender), data = regress)
- regress$pred = predict(model, regress)
- 
- regress %>%
-   ggplot(aes(x = v, y = y)) +
-   geom_point() +
-   geom_line(aes(y = pred), color = 'red') +
-   ylab('Change in Rank from \nDoctoal to Faculty Institution') + 
-   xlab('Doctoral Institution Rank') +
-   ggtitle('Predicting Prestige Changes' )
- 
- 
- 
-cat('\ncoefficients:\n')
+# I could do train/test split, but the model's not very good, and we're really just doing thsi to interpret the coefficients
+model <- lm(y ~ (v + num_gender), data = regress)
+regress$pred <- predict(model, regress)
+
+regress %>%
+  ggplot(aes(x = v, y = y)) +
+  geom_point() +
+  geom_line(aes(y = pred), color = "red") +
+  ylab("Change in Rank from 
+Doctoal to Faculty Institution") +
+  xlab("Doctoral Institution Rank") +
+  ggtitle("Predicting Prestige Changes")
+
+
+
+cat("
+coefficients:
+")
 model$coefficients
-cat('\nR squared:', summary(model)$r.squared )
-#we see a pretty bad r^2 also.... kind of expected this
-
-
+cat("
+R squared:", summary(model)$r.squared)
+# we see a pretty bad r^2 also.... kind of expected this
 ```
 
 We can see that the model predicts women to go to higher prestige schools relative to their doctoral school, although only by about 4 ranks, so not a very big difference. We can also see that as people go to lower prestige schools, the model predicts they will go to higher prestige schools. Of course, this doesn't really tell the full story, since by looking at the graph we can that there are more points for the higher prestige doctoral schools (x close to 1), and this model obviously doesn't capture the people who attended s these schools but didn't go on to become faculty professors. 
-
-
-
 
 
 
