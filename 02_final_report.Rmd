@@ -83,7 +83,6 @@ all_edgelists <- data.frame()
 all_vertexes <- data.frame()
 placement_data <- data.frame()
 
-
 for (dep in names(data_list)) {
   edgelist <- data_list[[dep]]$edge
   vertex <- data_list[[dep]]$vert
@@ -141,9 +140,9 @@ for (dep in names(data_list)) {
   )
 
 
-  # making dataframes of the top 15 of institutions with the differences in prestige from phd to faculty shools
+  # making dataframes of the top 15 of institutions with the differences in prestige from phd to faculty schools
   # This is to make the density plots in Fig. 3
-  # Am doing rbing to keep data from all the departments, but addign the label of department first
+  # Am doing rbing to keep data from all the departments, but adding the label of department first
 
   edgelist$dep <- dep
   vertex$dep <- dep
@@ -161,27 +160,10 @@ for (dep in names(data_list)) {
     mutate(diff = (v - u) / num_schools) %>%
     select(diff, dep, rank))
 
-  # Finding the gini coefficient for each department, using the library reldist
-  school_counts <- edgelist %>%
-    filter(v != num_schools) %>%
-    group_by(v) %>%
-    summarize(counts = n()) %>%
-    ungroup()
-
-  # Here the coefficients look very small when looking at it split by department
-  G <- gini(school_counts$counts, runif(n = nrow(school_counts)))
-
-  cat("
-", dep, "Gini Coefficient:", G)
-
-
-
 
   # save all the edgelists and vertex lists into one dataframe (with the department labels) so its easy to do stuff with them outside this loop
   all_edgelists <- rbind(all_edgelists, edgelist)
   all_vertexes <- rbind(all_vertexes, vertex)
-
-
 
 
   # Setting up Figure 2 plots
@@ -321,9 +303,26 @@ rbind(top15, rest) %>%
 
 
 # Total Gini Coefficient 
-still not able ot get the number they got in the original paper
+Here we calculte the Gini Coefficient for all departments and the full dataset. The Gini Coefficient quantifies inequality in a distribution. If the distribution is uniform then the Gini coefficient is 0, if one person owns all the wealth then it is 1.
 
 ```{r}
+for (dep in names(data_list)) {
+  
+  edgelist <- data_list[[dep]]$edge
+  
+  # Finding the gini coefficient for each department, using the library reldist
+  school_counts <- edgelist %>%
+    filter(v != num_schools) %>%
+    group_by(v) %>%
+    summarize(counts = n()) %>%
+    ungroup()
+
+  # Here the coefficients look very small when looking at it split by department
+  G <- gini(school_counts$counts, runif(n = nrow(school_counts)))
+
+  cat(dep, "Gini Coefficient: ", G, "\n")
+}
+
 school_counts <- all_edgelists %>%
   left_join(all_vertexes, by = c("v" = "u", "dep" = "dep")) %>%
   select(v, u, institution) %>%
@@ -335,9 +334,10 @@ school_counts <- all_edgelists %>%
 # Here the coefficients look very small when looking at it split by department
 G <- gini(school_counts$counts)
 
-cat("Gini Coefficient for whole dataset:", G)
+cat("Whole Dataset Coefficient:", G)
 ```
 
+We were unable to reproduce the Gini Coefficients reported in the paper. They report `G=0.62-0.76` indicating extremely strong inequality. Our values are much lower on the whole, but still indicate inequality. 
 
 
 # Predicting rank of the hiring party from gender  
