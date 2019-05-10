@@ -87,62 +87,10 @@ for (dep in names(data_list)) {
   edgelist <- data_list[[dep]]$edge
   vertex <- data_list[[dep]]$vert
 
-  # making a table that includes the weight of each edge
-  weighted_edgelist <- edgelist %>%
-    group_by(v, u) %>%
-    summarize(count = n()) %>%
-    ungroup() %>%
-    left_join(vertex, by = c("v" = "u")) %>%
-    select(v, u, count, institution)
-
-
-  # fitlering the weighted edgelist to make an easier to look at plot (like in Fig. 1)
-  smaller <- weighted_edgelist %>%
-    filter(u <= 10, v <= 10)
-
-  # Then plotting this network of the top schools
-  smaller_graph <- smaller %>%
-    graph_from_data_frame(directed = TRUE)
-
-
-  plot(smaller_graph,
-    vertex_size = 2, edge.width = E(smaller_graph)$count / 2,
-    layout = layout_in_circle(smaller_graph, order = V(smaller_graph)),
-    vertex.label = unique(E(smaller_graph)$institution),
-    main = paste(dep, "Department", sep = " ")
-  )
-
-
-  num_schools <- max(edgelist$u)
-
-  # making another set of the full network to make a network plot like in Fig. 3
-  prestige_list <- weighted_edgelist %>%
-    filter(v != num_schools, u != num_schools) %>%
-    group_by(v) %>%
-    summarize(
-      top_school = as.double(v <= 0.15 * num_schools)[1],
-      prestige = num_schools - v[1]
-    ) %>%
-    ungroup()
-
-
-  # Setting up the network to plot Fig. 3
-  graph <- weighted_edgelist %>%
-    filter(u != v, u %in% prestige_list$v, v %in% prestige_list$v) %>%
-    graph_from_data_frame(directed = FALSE, vertices = prestige_list)
-
-
-  plot(graph,
-    vertex.size = 2 + 3 * V(graph)$top_school + V(graph)$prestige / 15,
-    vertex.color = 3 + V(graph)$top_school,
-    vertex.label = NA,
-    main = paste(dep, "Department", sep = " ")
-  )
-
-
   # making dataframes of the top 15 of institutions with the differences in prestige from phd to faculty schools
   # This is to make the density plots in Fig. 3
   # Am doing rbing to keep data from all the departments, but adding the label of department first
+  num_schools <- max(edgelist$u)
 
   edgelist$dep <- dep
   vertex$dep <- dep
@@ -188,6 +136,81 @@ for (dep in names(data_list)) {
     ungroup(edgelist))
 }
 ```
+
+```{r}
+for (dep in names(data_list)) {
+  edgelist <- data_list[[dep]]$edge
+  vertex <- data_list[[dep]]$vert
+
+  # making a table that includes the weight of each edge
+  weighted_edgelist <- edgelist %>%
+    group_by(v, u) %>%
+    summarize(count = n()) %>%
+    ungroup() %>%
+    left_join(vertex, by = c("v" = "u")) %>%
+    select(v, u, count, institution)
+
+
+  # fitlering the weighted edgelist to make an easier to look at plot (like in Fig. 1)
+  smaller <- weighted_edgelist %>%
+    filter(u <= 10, v <= 10)
+
+  # Then plotting this network of the top schools
+  smaller_graph <- smaller %>%
+    graph_from_data_frame(directed = TRUE)
+
+
+  plot(smaller_graph,
+    vertex_size = 2, edge.width = E(smaller_graph)$count / 2,
+    layout = layout_in_circle(smaller_graph, order = V(smaller_graph)),
+    vertex.label = unique(E(smaller_graph)$institution),
+    main = paste(dep, "Department", sep = " ")
+  )
+}
+```
+
+```{r}
+for (dep in names(data_list)) {
+  edgelist <- data_list[[dep]]$edge
+  vertex <- data_list[[dep]]$vert
+
+  # making a table that includes the weight of each edge
+  weighted_edgelist <- edgelist %>%
+    group_by(v, u) %>%
+    summarize(count = n()) %>%
+    ungroup() %>%
+    left_join(vertex, by = c("v" = "u")) %>%
+    select(v, u, count, institution)
+
+  
+  num_schools <- max(edgelist$u)
+
+  # making another set of the full network to make a network plot like in Fig. 3
+  prestige_list <- weighted_edgelist %>%
+    filter(v != num_schools, u != num_schools) %>%
+    group_by(v) %>%
+    summarize(
+      top_school = as.double(v <= 0.15 * num_schools)[1],
+      prestige = num_schools - v[1]
+    ) %>%
+    ungroup()
+
+
+  # Setting up the network to plot Fig. 3
+  graph <- weighted_edgelist %>%
+    filter(u != v, u %in% prestige_list$v, v %in% prestige_list$v) %>%
+    graph_from_data_frame(directed = FALSE, vertices = prestige_list)
+
+
+  plot(graph,
+    vertex.size = 2 + 3 * V(graph)$top_school + V(graph)$prestige / 15,
+    vertex.color = 3 + V(graph)$top_school,
+    vertex.label = NA,
+    main = paste(dep, "Department", sep = " ")
+  )
+}
+```
+
 # Plot Lorentz curves (Fig 2A)
 Below we reproduce the Lorentz curve for the graphs. The Lorentz curve is normally used to show an income distribution, but here it is the fraction of faculty produced plotted as a function of the fraction of institutions. For this data, it shows that most of the hires come from a few select schools.
 
