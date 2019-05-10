@@ -28,6 +28,7 @@ library(modelr)
 ```
 
 # Data Loading
+The data provided by the authors required no additional cleaning to reproduce the results. 
 
 ```{r read data}
 fp_prefix <- "data/original/"

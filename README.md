@@ -7,6 +7,11 @@ A complete report of our results is in `02_final_report.pdf`, which can be gener
 
 To redownload the data run `make doanload_data`. The data will be downloaded to the `data/original` folder. The data can be found at the URL `http://tuvalu.santafe.edu/~aaronc/facultyhiring/replicationData_all.zip`
 
+the authors_original_code directory contains a single matlab file `mvrsample.m`.
+This was the only code the authors provided and preforms Markov Chain Monte
+Carlo to sample the minimum violation rankings (MVRs) of the network. We did not
+reproduce this portion of the paper, but the code is provided for reference.
+
 The repository is structured as follows:
 
 1. `01_get_original_data.sh` gets the original data used by the authors and places a copy in `data/`
