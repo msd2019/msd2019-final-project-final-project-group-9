@@ -75,68 +75,7 @@ data_list <- list(
 ```
 
 
-# Produce Network Visualizations and Preform Calculations for other Figures
-```{r}
-top15 <- data.frame()
-rest <- data.frame()
-all_edgelists <- data.frame()
-all_vertexes <- data.frame()
-placement_data <- data.frame()
-
-for (dep in names(data_list)) {
-  edgelist <- data_list[[dep]]$edge
-  vertex <- data_list[[dep]]$vert
-
-  # making dataframes of the top 15 of institutions with the differences in prestige from phd to faculty schools
-  # This is to make the density plots in Fig. 3
-  # Am doing rbing to keep data from all the departments, but adding the label of department first
-  num_schools <- max(edgelist$u)
-
-  edgelist$dep <- dep
-  vertex$dep <- dep
-
-
-  top15 <- rbind(top15, edgelist %>%
-    filter(u <= .15 * num_schools) %>%
-    mutate(diff = (v - u) / num_schools) %>%
-    select(diff, dep, rank))
-
-  # doing the same thing for the rest of the institutions
-  rest <- rbind(rest, edgelist %>%
-    filter(u > .15 * num_schools) %>%
-    filter(u < num_schools) %>%
-    mutate(diff = (v - u) / num_schools) %>%
-    select(diff, dep, rank))
-
-
-  # save all the edgelists and vertex lists into one dataframe (with the department labels) so its easy to do stuff with them outside this loop
-  all_edgelists <- rbind(all_edgelists, edgelist)
-  all_vertexes <- rbind(all_vertexes, vertex)
-
-
-  # Setting up Figure 2 plots
-  total_placements <- edgelist %>%
-    filter(u < n()) %>%
-    summarise(rows = n())
-  total_placements <- as.numeric(total_placements)
-
-
-
-  placement_data <- rbind(placement_data, edgelist %>%
-    filter(u < n()) %>%
-    group_by(u) %>%
-    summarise(
-      faculty_produced = n(),
-      fraction_placements = n() / total_placements
-    ) %>%
-    arrange(desc(fraction_placements)) %>%
-    mutate(cum_place_percent = cumsum(fraction_placements)) %>%
-    mutate(fraction_schools = row_number() / n()) %>%
-    mutate(dep = dep) %>%
-    ungroup(edgelist))
-}
-```
-
+# Produce Network Visualizations (Fig 1 Top)
 ```{r}
 for (dep in names(data_list)) {
   edgelist <- data_list[[dep]]$edge
@@ -168,6 +107,7 @@ for (dep in names(data_list)) {
   )
 }
 ```
+# Full Network Visualizations (3A)
 
 ```{r}
 for (dep in names(data_list)) {
@@ -243,7 +183,62 @@ History for example displayed a greater inequality than Computer Science which s
 # Faculty Placement PDFs (3B and 3C)
 Here we reproduce the PDFs for the relative changes in rank for the top 15 schools and all other institutions. 
 ```{r}
-# Making the density plots here
+# Making dataframes of the top 15 of institutions with the differences in prestige from phd to faculty schools
+top15 <- data.frame()
+rest <- data.frame()
+all_edgelists <- data.frame()
+all_vertexes <- data.frame()
+placement_data <- data.frame()
+
+for (dep in names(data_list)) {
+  edgelist <- data_list[[dep]]$edge
+  vertex <- data_list[[dep]]$vert
+
+  num_schools <- max(edgelist$u)
+
+  edgelist$dep <- dep
+  vertex$dep <- dep
+
+  # rbind to keep data from all the departments, but adding the label of department first
+  top15 <- rbind(top15, edgelist %>%
+    filter(u <= .15 * num_schools) %>%
+    mutate(diff = (v - u) / num_schools) %>%
+    select(diff, dep, rank))
+
+  # doing the same thing for the rest of the institutions
+  rest <- rbind(rest, edgelist %>%
+    filter(u > .15 * num_schools) %>%
+    filter(u < num_schools) %>%
+    mutate(diff = (v - u) / num_schools) %>%
+    select(diff, dep, rank))
+
+
+  # save all the edgelists and vertex lists into one dataframe (with the department labels) so its easy to do stuff with them outside this loop
+  all_edgelists <- rbind(all_edgelists, edgelist)
+  all_vertexes <- rbind(all_vertexes, vertex)
+
+
+  # Setting up Figure 2 plots
+  total_placements <- edgelist %>%
+    filter(u < n()) %>%
+    summarise(rows = n())
+  total_placements <- as.numeric(total_placements)
+
+  placement_data <- rbind(placement_data, edgelist %>%
+    filter(u < n()) %>%
+    group_by(u) %>%
+    summarise(
+      faculty_produced = n(),
+      fraction_placements = n() / total_placements
+    ) %>%
+    arrange(desc(fraction_placements)) %>%
+    mutate(cum_place_percent = cumsum(fraction_placements)) %>%
+    mutate(fraction_schools = row_number() / n()) %>%
+    mutate(dep = dep) %>%
+    ungroup(edgelist))
+}
+
+# Making the density plots
 
 top15 %>%
   ggplot(aes(x = diff, color = dep)) +
@@ -275,7 +270,6 @@ rest %>%
 Below are density plots of prestige change for top15 and rest while splitting by both department and rank. Plots look pretty chaotic and we should probably bet rid of these eventually, but it doesn't hurt to see how small the differences are between the splits. 
 
 ```{R}
-
 top15 %>%
   mutate(rankdep = paste(rank, dep)) %>%
   ggplot(aes(x = diff, color = rankdep)) +
