@@ -205,7 +205,7 @@ for (dep in names(data_list)) {
     ungroup(edgelist))
 }
 ```
-# Plot Lorentz curves 
+# Plot Lorentz curves (figure 2A)
 
 ```{r}
 x <- c(0, .5, 1)
@@ -225,7 +225,11 @@ placement_data %>%
   ylab("Fraction of faculty produced") +
   labs(color = "Department")
 ```
+#Figure 2 Discussion
 
+Equality, while not observed in the world for the most part, the stunning inequality displayed by the Lorentz curves above show a picture where more than 70% of faculty originate from 25% of the universities. Something interesting in the data here was the gradual growth of inequality from measurable disciplines to more ideological ones. 
+
+History for example displayed a greater inequality than Computer Science which showed a greater inequality than Business. One possible reason for this could be that hiring methods in business rely more on the accomplishments in the world of business (a measurable statistic) while history on the other end of the spectrum does not have an easily measurable "success" metric which can be then used in faculty decisions.
 
 
 
