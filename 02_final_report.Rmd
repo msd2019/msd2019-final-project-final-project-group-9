@@ -28,7 +28,7 @@ library(modelr)
 ```
 
 # Data Loading
-The data provided by the authors required no additional cleaning to reproduce the results. 
+The data provided by the authors required no additional cleaning to reproduce the results. Here we load the data individually and store it in a list to allow for exploration and efficient iteration. 
 
 ```{r read data}
 fp_prefix <- "data/original/"
@@ -75,7 +75,7 @@ data_list <- list(
 ```
 
 
-# Produce Network Visualizations
+# Produce Network Visualizations and Preform Calculations for other Figures
 ```{r}
 top15 <- data.frame()
 rest <- data.frame()
@@ -206,7 +206,8 @@ for (dep in names(data_list)) {
     ungroup(edgelist))
 }
 ```
-# Plot Lorentz curves (figure 2A)
+# Plot Lorentz curves (Fig 2A)
+Below we reproduce the Lorentz curve for the graphs. The Lorentz curve is normally used to show an income distribution, but here it is the fraction of faculty produced plotted as a function of the fraction of institutions. For this data, it shows that most of the hires come from a few select schools.
 
 ```{r}
 x <- c(0, .5, 1)
@@ -226,7 +227,7 @@ placement_data %>%
   ylab("Fraction of faculty produced") +
   labs(color = "Department")
 ```
-#Figure 2 Discussion
+#Figure 2A Discussion
 
 Equality, while not observed in the world for the most part, the stunning inequality displayed by the Lorentz curves above show a picture where more than 70% of faculty originate from 25% of the universities. Something interesting in the data here was the gradual growth of inequality from measurable disciplines to more ideological ones. 
 
@@ -234,8 +235,8 @@ History for example displayed a greater inequality than Computer Science which s
 
 
 
-# Faculty Placement PDFs
-
+# Faculty Placement PDFs (3B and 3C)
+Here we reproduce the PDFs for the relative changes in rank for the top 15 schools and all other institutions. 
 ```{r}
 # Making the density plots here
 
