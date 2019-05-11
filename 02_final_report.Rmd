@@ -17,7 +17,7 @@ The main contribution of the paper is the dataset, which has been painstakingly 
 
 
 
-```{r}
+```{r imports}
 library(tidyverse)
 library(modelr)
 library(ggplot2)
@@ -30,7 +30,7 @@ library(modelr)
 # Data Loading
 The data provided by the authors required no additional cleaning to reproduce the results. Here we load the data individually and store it in a list to allow for exploration and efficient iteration. 
 
-```{r read data}
+```{r read-data}
 fp_prefix <- "data/original/"
 
 # Read by department data individually
@@ -78,7 +78,7 @@ data_list <- list(
 # Produce Network Visualizations (Fig 1 Top)
 We begin by reproducing the network visualizations for each department. The paper does not report the graphs for all the departments, but we have created them below to allow for better understanding of the network shapes. Since we are plotting all the departments, we have to normalize the edge sizes to make the plots comparable. The paper did not mention any normalization as they were only showing a single department. We decided to normalize by dividing through by the total number of edges. 
 
-```{r}
+```{r dep-network-viz}
 for (dep in names(data_list)) {
   edgelist <- data_list[[dep]]$edge
   vertex <- data_list[[dep]]$vert
@@ -119,7 +119,7 @@ For comparison to the paper, we see that MIT's Computer Science department sends
 # Full Network Visualizations (3A)
 Below we reproduce full network visualizations with the top 15% of the institutions highlighted. The size of each vertex represents the school's prestige.
 
-```{r}
+```{r full-network-viz}
 for (dep in names(data_list)) {
   edgelist <- data_list[[dep]]$edge
   vertex <- data_list[[dep]]$vert
@@ -161,11 +161,11 @@ for (dep in names(data_list)) {
 ```
 
 
-Just like in the paper, we see that the top 15 percent of schools (highlited in yellow) tend to take up central positions in the graph, which indicates they have the best faculty production and placement. Simiarly to the previous figure looking at placement directionality (figure 1), we see the History departments having a much more central bias than the other two discipline, with business having the widest distrobution of the three.  There was no additional data processing needed to reproduce this result.  
+Just like in the paper, we see that the top 15 percent of schools (highlighted in yellow) tend to take up central positions in the graph, which indicates they have the best faculty production and placement. Similarly to the previous figure looking at placement directionality (figure 1), we see the History departments having a much more central bias than the other two discipline, with Business having the widest distribution of the three.  There was no additional data processing needed to reproduce this result.    
 
 # Faculty Placement PDFs (3B and 3C)
 Here we reproduce the PDFs for the relative changes in rank for the top 15 schools and all other institutions. 
-```{r}
+```{r faculty-pdfs}
 # Dataframe of top 15 institutions and rest
 top15 <- data.frame()
 rest <- data.frame()
@@ -248,13 +248,13 @@ rest %>%
   labs(color = "Department")
 ```
 
-Just like in the paper, we see that candidates from the top 15% get much better placements than those in the rest of the institutions. One of the interesting observations here however, was that the program with the highest spike was computer_science, followed by business and then history. This seems to corelate well with the high bias of the "prestigous" schools when it comes to history, meaning there is far less upward mobility in that space, where as computer science seems to have the greatest upward mobility. There was no additional processing to acheive this result. 
+Just like in the paper, we see that candidates from the top 15% get much better placements than those in the rest of the institutions. One of the interesting observations here, however, was that the program with the highest spike was computer_science, followed by business and then history. This seems to correlate well with the high bias of the "prestigious" schools when it comes to history, meaning there is far less upward mobility in that space, whereas computer science seems to have the greatest upward mobility. There was no additional processing to achieve this result. 
 
 
 # Plot Lorentz curves (Fig 2A)
 Below we reproduce the Lorentz curve for the graphs. The Lorentz curve is normally used to show an income distribution, but here it is the fraction of faculty produced plotted as a function of the fraction of institutions. For this data, it shows that most of the hires come from a few select schools.
 
-```{r}
+```{r lorentz}
 #Seting up the "line of equality"
 x <- c(0, .5, 1)
 y <- c(0, .5, 1)
@@ -277,13 +277,13 @@ placement_data %>%
 ```
 
 
-We see the same result as in the paper that all departments show strong inequality with History having the most and Buisness having the least. This is consistant with our network visualizations, which show the strongest ties in the History graph and the most equal ties in the Buisness graph. One possible reason for this could be that hiring methods in business rely more on the accomplishments in the world of business (a measurable statistic) while history on the other end of the spectrum does not have an easily measurable "success" metric which can be then used in faculty decisions. This also supports the theory of upward mobility, in history for example (the least upward mobile department) you have the greatest amount of inequality.
+We see the same result as in the paper that all departments show strong inequality with History having the most and Business having the least. This is consistent with our network visualizations, which show the strongest ties in the History graph and the most equal ties in the Business graph. One possible reason for this could be that hiring methods in business rely more on the accomplishments in the world of business (a measurable statistic) while history on the other end of the spectrum does not have an easily measurable "success" metric which can be then used in faculty decisions. This also supports the theory of upward mobility, in history for example (the least upward mobile department) you have the greatest amount of inequality.
 
 
 # Total Gini Coefficient 
 Here we calculte the Gini Coefficient for all departments and the full dataset. The Gini Coefficient quantifies inequality in a distribution. If the distribution is uniform then the Gini coefficient is 0, if one person owns all the wealth then it is 1.
 
-```{r}
+```{r gini}
 for (dep in names(data_list)) {
   edgelist <- data_list[[dep]]$edge
 
@@ -317,16 +317,14 @@ cat("Whole Dataset Coefficient:", G)
 
 We were unable to reproduce the Gini Coefficients reported in the paper. They report `G=0.62-0.76` indicating extremely strong inequality. Our values are much lower on the whole, but still indicate inequality. 
 
-                                    EXTENSION
----------------------------------------------------------------------------------------
 
-Predicting Hiring Party Ranks and Prestige with Different Factors.
-Most of the results in the paper are descriptive, they plot some aspect of the graph and make the argument for inequality. For our extension, we aim to augment these results by introducing some more predictive results. Specifically, we use simple linear regression models to predict different properties of the hiring party. While we do not expect these simple models to be performant at predicting the future because the underlying distribution is expected to change in time, careful analysis of their coefficients will allow us to peel off general insights and trends for this particular dataset. 
+# Extension: Predicting Hiring Party Ranks and Prestige with Different Factors.
+Most of the results in the paper are descriptive, some aspect of the graph is plotted and the authors appeal to the judgment of the reader to make the argument for inequality. For our extension, we aim to augment these results by introducing some more predictive results. Specifically, we use simple linear regression models to predict different properties of the hiring party. While we do not expect these simple models to be performant at predicting the future because the underlying distribution is expected to change in time, careful analysis of their coefficients will allow us to peel off general insights and trends for this particular dataset. 
 
 ### Predicting rank of the hiring party from gender  
 We begin by attempting to predict the rank of the hiring party from the gender of the candidate. This will allow us to draw some insights about the effect of gender on faculty hiring. We will be setting our level of statistical significance to be a p-value of 0.05. 
 
-```{r}
+```{r pred-rank-from-gender}
 
 regress <- all_edgelists %>%
   mutate(y = u - v) %>%
@@ -367,7 +365,7 @@ He we add faculty ranks as predictors for the model. This allows us to estimate 
 
 
 
-```{r}
+```{r faculty-pred}
 
 rank_predictors <-
   all_edgelists %>%
@@ -400,14 +398,16 @@ summary(model)
 ```
 
 
-We can see that faculty with a rank of full have a slightly bigger difference in prestige, going to less prestigious schools, although its such a small difference I don't believe it means very much. For that coefficient we do see a small p-value, and it makes intuitive sense that it is easier to get a full faculty position at a lower prestige school. Still, the difference is not nearly as big as I would have expected. 
+We can see that faculty with a rank of full have a slightly bigger difference in prestige, going to less prestigious schools, although it's such a small difference we don't believe it means very much. For that coefficient, we do see a small p-value, and it makes intuitive sense that it is easier to get a full faculty position at a lower prestige school. Still, the difference is not nearly as big as we would have expected. 
+
+
 As for Associate and Assistants, we see no statistically significant difference between the two coefficients. 
 
 
 ### Predicting Hiring School Prestige from Doctoral Rank and Gender
 From our last model, we saw a statistically significant difference in the hiring patterns for both women and full-time faculty members. We observe women going to relatively higher rank schools, wihle full-time faculty members go to relatively lower rank schools. Here we build on the previous model, including the binary coefficients for women and full time faculty, but includign one more variable for being both female and full-time. This will hopefully illustrate more about the universities' hiring patterns. 
 
-```{r}
+```{r prestige-from-rank-gender}
 
 # testing what how much prestige points yield the best, how to weigh k
 
@@ -438,15 +438,15 @@ cat('\nNumber of Female Full-time Faculty:', nrow(all_edgelists %>%
   
 ```
 
-Here we see statistically signifiant differences for female associates and assistants, as well as male full-time faculty. Unfortunately, we do not see a statistically signifiant difference for female full-time faculty. Part of this is due to the small number of female ful-time faculty, which is 1406, compared to 7175 for men. This is perhaps more telling, but from the data, it seems that the women are going to more prestigious schools. This is a bit reminiscient of the Berkely case where women claimed they were being systematically discriminated against, but further examinations showed that women were applying to more selective departments. While we cannot look at the applications in this case, I still wouldn't expect them to fully explain the large difference in these two numbers. Still, it does seem like women are generally working at relatively higher prestige schools compared to where they get their doctorates, which could suggest they are also applying to more selective faculty ranks. However, from this data alone it wouldn't be appropriate to reach that conclusion. 
-From this research, we can really only say that women generally work at relatively higher prestige schools, while full time faculty generally go to relatively lower prestige schools.  
+
+Here we see statistically significant differences for female associates and assistants, as well as male full-time faculty. Unfortunately, we do not see a statistically significant difference for female full-time faculty. Part of this is due to the small number of female full-time faculty, which is 1406, compared to 7175 for men. This is perhaps more telling, but from the data, it seems that the women are going to more prestigious schools. This is a bit reminiscent of the Berkely case where women claimed they were being systematically discriminated against, but further examinations showed that women were applying to more selective departments. While we cannot look at the applications, in this case, I still wouldn't expect them to fully explain the large difference in these two numbers. Still, it does seem like women are generally working at relatively higher prestige schools compared to where they get their doctorates, which could suggest they are also applying to more selective faculty ranks. However, from this data alone it wouldn't be appropriate to reach that conclusion.
 
 
-
+From this research, we can really only say that women generally work at relatively higher prestige schools, while full-time faculty generally go to relatively lower prestige schools.
 
 
 ### Gini Coefficient for Full faculty, split by Gender
-```{r}
+```{r gini-full}
 male_full_counts <- all_edgelists %>%
   filter(rank == 'Full') %>%
   filter(gender =='M') %>%
@@ -477,12 +477,11 @@ cat('\nGini Coefficient for Male Full-time Faculty:', MG)
 cat('\nGini Coefficient for Femmale Full-time Faculty:', FG)
 
 ```
-We can see that the gini coefficient for full time faculty is slightly higher than the dataset as a whole, further suggesting there is more observed inquality in the hiring process for faculty of rank full compared to assistants or associates. However, the gini coefficient for male full-time faculty is actually larger than the gini coefficient for female, suggesting that institutional prestige isn't a bigger factor for hiring women than men. Still, these numbers are pretty large, implying that when it comes to both male and female full-time faculty, a small number of institutions produce a disproportionately large number of full-time faculty. 
-
-Also, it should be said that the coefficiesnt we see here are still not as large as the reported coefficient in the original paper. 
 
 
+We can see that the Gini coefficient for full-time faculty is slightly higher than the dataset as a whole, further suggesting there is more observed inequality in the hiring process for faculty of rank full compared to assistants or associates. However, the Gini coefficient for male full-time faculty is actually larger than the Gini coefficient for female, suggesting that institutional prestige isn't a bigger factor for hiring women than men. Still, these numbers are pretty large, implying that when it comes to both male and female full-time faculty, a small number of institutions produce a disproportionately large number of full-time faculty. 
 
+Also, it should be said that the coefficients we see here are still not as large as the reported coefficient in the original paper. 
 
 # Conclusions
 "FODJFIODSFISDIFOSDIOFJIO"
