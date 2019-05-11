@@ -13,7 +13,7 @@ output:
 
 This report is a recreation and extension of the paper “Systematic inequality and hierarchy in faculty hiring networks” by Aaron Clauset, Samuel Arbesman and Daniel Larremore published in Science Advances in 2015. The paper explores the role of gender and institutional prestige in the faculty job market and finds that it is a deeply hierarchical and unequal system. Analyzing these effects is important as institutional hiring and faculty quality affects all aspects of university life both for the hired scholars as well as their undergraduate students. Furthermore, universities are often ideally seen as meritocracies with tests, grades, and journal publications allowing one's personal ability, as opposed to their networking ability, to shine. Debunking this myth will allow us to make the changes necessary to move closer to this ideal in the future. 
 
-The main contribution of the paper is the dataset, which has been painstakingly scraped and cleaned from a multitude of different sources. The data represents the placement of 18924 different faculty members at 461 academic institutions across the disciplines of Business, Computer Science and History.  To explore the hierarchical structure of the departmental networks, the paper presents various figures and computations, which quantify and describe the inequality in different ways. For this report, we choose to recreate what we see as the most convincing of these results. Below we recreate, the visualization of the placement network for the top 10 schools in each department (Fig 1 top), the Lorentz curves for each department (Fig 2A), the network visualizations of the entire network for each department with the top 15% of schools highlighted (Fig 3A), and the probability distributions of the relative change in prestige rank for the top 15% of schools (Fig 3B) and all other institutions (Fig 3C). We also recreate the calculate the Gini Coefficient, which quantifies the social inequality in the network. For our extension, we introduce some predictive results to augment the primarily descriptive results from the paper. To do this, we attempt to predict the rank and prestige of the hiring party from different factors and interpret the coefficients to decipher overall trends from the data.
+The main contribution of the paper is the dataset, which has been painstakingly scraped and cleaned from a multitude of different sources. The data represents the placement of 18924 different faculty members at 461 academic institutions across the disciplines of Business, Computer Science and History.  To explore the hierarchical structure of the departmental networks, the paper presents various figures and computations, which quantify and describe the inequality in different ways. For this report, we choose to recreate what we see as the most convincing of these results. Below we recreate, the visualization of the placement network for the top 10 schools in each department (Fig 1 top), the Lorentz curves for each department (Fig 2A), the network visualizations of the entire network for each department with the top 15% of schools highlighted (Fig 3A), and the probability distributions of the relative change in prestige rank for the top 15% of schools (Fig 3B) and all other institutions (Fig 3C). We also recreate the calculate the Gini Coefficient, which quantifies the social inequality in the network. For our extension, we introduce some predictive results to augment the primarily descriptive results from the paper. To do this, we attempt to predict the rank and prestige of the hiring party from different factors, focusing on gender and professor rank, and interpret the coefficients to decipher overall trends from the data. 
 
 
 
@@ -319,7 +319,7 @@ We were unable to reproduce the Gini Coefficients reported in the paper. They re
 
 
 # Extension: Predicting Hiring Party Ranks and Prestige with Different Factors.
-Most of the results in the paper are descriptive, some aspect of the graph is plotted and the authors appeal to the judgment of the reader to make the argument for inequality. For our extension, we aim to augment these results by introducing some more predictive results. Specifically, we use simple linear regression models to predict different properties of the hiring party. While we do not expect these simple models to be performant at predicting the future because the underlying distribution is expected to change in time, careful analysis of their coefficients will allow us to peel off general insights and trends for this particular dataset. 
+Most of the results in the paper are descriptive, some aspect of the graph is plotted and the authors appeal to the judgment of the reader to make the argument for inequality. For our extension, we aim to augment these results by introducing some more predictive results. Specifically, we use simple linear regression models to predict different properties of the hiring party. While we do not expect these simple models to be performant at predicting the future because the underlying distribution is expected to change in time, careful analysis of their coefficients will allow us to peel off general insights and trends for this particular dataset. We also further explore the Gini coefficients by computing it for full faculty and splitting by gender. 
 
 ### Predicting rank of the hiring party from gender  
 We begin by attempting to predict the rank of the hiring party from the gender of the candidate. This will allow us to draw some insights about the effect of gender on faculty hiring. We will be setting our level of statistical significance to be a p-value of 0.05. 
@@ -353,7 +353,7 @@ summary(model)
 ```
 
 
-We can see that the model predicts women to go to higher prestige schools relative to their doctoral school (the difference is statistically significant), although only by about 4 ranks, so not a very big difference. We can also see that as people go to lower prestige schools, the model predicts they will work at relatively higher prestige schools. Part of the reason for this is also that there are more possible ranks to ascend by the lower rank you start at.
+We can see that the model predicts that women go to higher prestige schools relative to their doctoral school (the difference is statistically significant), although only by about 4 ranks, so not a very big difference. We can also see that as people go to lower prestige schools, the model predicts they will work at relatively higher prestige schools. Part of the reason for this is also that there are more possible ranks to ascend by the lower rank you start at.
 
 Of course, this doesn't really tell the full story, since by looking at the graph we can also see that there are more points for the higher prestige doctoral schools (x close to 1), and this model obviously doesn't capture the people who attended the lower-rank schools but didn't go on to become faculty professors.
 
@@ -405,7 +405,7 @@ As for Associate and Assistants, we see no statistically significant difference 
 
 
 ### Predicting Hiring School Prestige from Doctoral Rank and Gender
-From our last model, we saw a statistically significant difference in the hiring patterns for both women and full-time faculty members. We observe women going to relatively higher rank schools, wihle full-time faculty members go to relatively lower rank schools. Here we build on the previous model, including the binary coefficients for women and full time faculty, but includign one more variable for being both female and full-time. This will hopefully illustrate more about the universities' hiring patterns. 
+From our last model, we saw a statistically significant difference in the hiring patterns for both women and full-time faculty members. We observe women going to relatively higher rank schools, while full-time faculty members go to relatively lower rank schools. Here we build on the previous model, including the binary coefficients for women and full-time faculty, but including one more variable for being both female and full-time. This will hopefully illustrate more about the universities' hiring patterns. 
 
 ```{r prestige-from-rank-gender}
 
@@ -484,9 +484,15 @@ We can see that the Gini coefficient for full-time faculty is slightly higher th
 Also, it should be said that the coefficients we see here are still not as large as the reported coefficient in the original paper. 
 
 # Conclusions
-"FODJFIODSFISDIFOSDIOFJIO"
+In this report, we reproduce several results from the paper “Systematic inequality and hierarchy in faculty hiring networks”. We find, for the most part, that the results are easily reproducible with no extra guidance or data cleaning. The exception to this is the Gini coefficient, which we find to be much lower than reported in the paper. We were unable to reproduce the results in the paper as they did not go into detail about where they got their numbers.
 
-The following is a list of all packages used to generate these results. (Leave at very end of file.)
+For our extension, we augment the descriptive results in the paper with predictive results. We regress the gender of the candidate against the rank of the hiring party and find that our model predicts that women go to slightly higher prestige schools than their degree. Next, we regress faculty ranks against hiring rank and find that full professors go to slightly less prestigious schools. This is intuitive because some candidates would be willing to take a larger role at a smaller school, but the difference was smaller than we expected and we see no effect for the lower rank positions. Finally, we combined the two regressions and regressed hiring school prestige against doctoral rank and gender. We find that there no statistically significant difference for female full-time faculty, however, this is possibly due to the low number of female professors in the dataset.
+
+Net-net, from this analysis we conclude that women generally work at relatively higher prestige schools and full-time faculty generally go to relatively lower prestige schools. Finally, we round out our analysis by exploring the Gini coefficient for full faculty when split by gender. We find that both the coefficients are larger than the coefficients for the whole dataset and that the male coefficient is higher than the female, but the difference is rather small. This indicates that the hiring process for full-time faculty is quite unequal, but it is more unequal for men than for women. That being said, this effect is quite small, and more study is required to confirm the effect.  
+
+
+# Packages 
+The following is a list of all packages used to generate these results. 
 
 ```{r}
 sessionInfo()
