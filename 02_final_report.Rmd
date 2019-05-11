@@ -271,13 +271,7 @@ placement_data %>%
   labs(color = "Department")
 ```
 
-
-#Figure 2A Discussion
-
-Equality, while not observed in the world for the most part, the stunning inequality displayed by the Lorentz curves above show a picture where more than 70% of faculty originate from 25% of the universities. Something interesting in the data here was the gradual growth of inequality from measurable disciplines to more ideological ones. 
-
-History for example displayed a greater inequality than Computer Science which showed a greater inequality than Business. One possible reason for this could be that hiring methods in business rely more on the accomplishments in the world of business (a measurable statistic) while history on the other end of the spectrum does not have an easily measurable "success" metric which can be then used in faculty decisions.
-
+We see the same result as in the paper that all departments show strong inequality with History having the most and Buisness having the least. This is consistant with our network visualizations, which show the strongest ties in the History graph and the most equal ties in the Buisness graph. One possible reason for this could be that hiring methods in business rely more on the accomplishments in the world of business (a measurable statistic) while history on the other end of the spectrum does not have an easily measurable "success" metric which can be then used in faculty decisions.
 
 
 # Total Gini Coefficient 
